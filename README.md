@@ -30,6 +30,60 @@ The system uses a four-layer hybrid architecture:
 - **Memory Optimization**: Optimized tensor operations for minimal memory footprint
 - **Performance Benchmarking**: Comprehensive CPU vs GPU performance comparison
 
+## Dataset
+
+### Microsoft Building Footprints Dataset
+
+This project uses the **Microsoft Building Footprints** dataset, which provides comprehensive building outline data across the United States. The dataset contains over 130 million building footprint polygons derived from high-resolution satellite imagery using deep learning techniques.
+
+#### Dataset Information
+- **Source**: [Microsoft Building Footprints](https://github.com/Microsoft/USBuildingFootprints)
+- **Coverage**: All 50 US states + District of Columbia
+- **Format**: GeoJSON files with polygon geometries
+- **License**: [Open Data Commons Open Database License (ODbL)](https://opendatacommons.org/licenses/odbl/)
+- **Total Buildings**: ~130 million building footprints
+- **Data Size**: ~3GB (compressed)
+
+#### Dataset Links
+- **Main Repository**: https://github.com/Microsoft/USBuildingFootprints
+- **Direct Downloads**: 
+  - Individual states: https://usbuildingdata.blob.core.windows.net/usbuildings-v2/
+  - Complete dataset: Available through Microsoft's Azure Blob Storage
+- **Rasterized Version**: Our pipeline uses rasterized versions (.tif files) for efficient processing
+  - Download processed rasters: [Contact authors for preprocessed data]
+
+#### Data Preprocessing
+The raw GeoJSON files are preprocessed into rasterized format:
+1. **Vector to Raster Conversion**: Polygons converted to binary masks
+2. **State-wise Organization**: Data organized by US state for efficient loading
+3. **Multi-resolution Patches**: Extracted at 256×256 pixel resolution
+4. **Statistical Layers**: Generated count, average, sum layers per state
+
+#### Expected Directory Structure
+```
+building_footprint_results/data/
+├── Alabama/
+│   ├── Alabama_avg.tif      # Average building density
+│   ├── Alabama_cnt.tif      # Building count per pixel
+│   ├── Alabama_sum.tif      # Sum of building areas
+│   └── Alabama_max.tif      # Maximum building density
+├── Arizona/
+├── California/
+└── ... (all 50 states)
+```
+
+#### Citation
+If you use this dataset, please cite:
+```bibtex
+@misc{usbuildings,
+  title={US Building Footprints},
+  author={Microsoft},
+  year={2022},
+  howpublished={GitHub repository},
+  url={https://github.com/Microsoft/USBuildingFootprints}
+}
+```
+
 ## Installation
 
 ### Requirements
