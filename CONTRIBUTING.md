@@ -188,6 +188,13 @@ We track and celebrate contributions:
 - Develop multi-modal fusion approaches
 - Create synthetic data generation methods
 
+#### Enhanced Adaptive Fusion Framework
+To further enhance the adaptive fusion framework, we propose integrating learned proposals from Mask R-CNN, such as logits or probability maps, directly into the RL action space as additional input streams for fusion. The reinforcement learning state will be enriched with image-conditioned features, CNN embeddings, and overlap statistics, providing the agent with deeper contextual awareness of both geometry and visual cues. 
+
+Moving beyond discrete fusion weights, we will expand the action space toward continuous policies using policy-gradient methods, enabling finer-grained and more adaptive regularization decisions. Extended GPU-based training will be conducted over longer horizons with larger sample sizes, increasing the number of patches per state and incorporating a broader set of windows and states to improve stability and generalization at national scale. 
+
+Furthermore, training Mask R-CNN for additional epochs or initializing with pre-trained weights will strengthen its role as a baseline before comparing against RL-driven fusion, ensuring more reliable benchmarking and alignment with national products such as the NLCD.
+
 ### Production Enhancements
 - Add deployment infrastructure (Docker, Kubernetes)
 - Implement monitoring and logging
