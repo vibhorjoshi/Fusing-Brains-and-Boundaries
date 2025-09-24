@@ -60,6 +60,120 @@ class GoogleStaticMapClient:
         self.api_key = api_key or os.getenv("GOOGLE_MAPS_STATIC_API_KEY", "")
         self.timeout_s = timeout_s
 
+    def get_city_image(self, city_name: str, zoom: int = 18, maptype: str = "satellite", 
+                       size: Tuple[int, int] = (640, 640)) -> Optional[np.ndarray]:
+        """
+        Get satellite image for a city by name.
+        
+        Args:
+            city_name: Name of the city
+            zoom: Zoom level (default 18)
+            maptype: Map type (default "satellite")
+            size: Image size as (width, height) tuple
+            
+        Returns:
+            BGR image array or None if unavailable
+        """
+        # Try to get coordinates for the city
+        coords = self._get_city_coordinates(city_name)
+        if not coords:
+            return None
+            
+        # Create City object
+        city = City(
+            name=city_name,
+            lat=coords[0],
+            lon=coords[1], 
+            zoom=zoom,
+            size=size,
+            maptype=maptype
+        )
+        
+        # Use existing fetch method
+        return self.fetch(city)
+    
+    def _get_city_coordinates(self, city_name: str) -> Optional[Tuple[float, float]]:
+        """
+        Get latitude and longitude for a city name using geocoding.
+        Returns (lat, lon) tuple or None if not found.
+        """
+        if not self.api_key:
+            # Fallback coordinates for common cities
+            fallback_coords = {
+                "new york": (40.7128, -74.0060),
+                "los angeles": (34.0522, -118.2437),
+                "chicago": (41.8781, -87.6298),
+                "houston": (29.7604, -95.3698),
+                "phoenix": (33.4484, -112.0740),
+                "philadelphia": (39.9526, -75.1652),
+                "san antonio": (29.4241, -98.4936),
+                "san diego": (32.7157, -117.1611),
+                "dallas": (32.7767, -96.7970),
+                "san jose": (37.3382, -121.8863),
+                "austin": (30.2672, -97.7431),
+                "jacksonville": (30.3322, -81.6557),
+                "fort worth": (32.7555, -97.3308),
+                "columbus": (39.9612, -82.9988),
+                "charlotte": (35.2271, -80.8431),
+                "san francisco": (37.7749, -122.4194),
+                "indianapolis": (39.7684, -86.1581),
+                "seattle": (47.6062, -122.3321),
+                "denver": (39.7392, -104.9903),
+                "washington": (38.9072, -77.0369),
+                "boston": (42.3601, -71.0589),
+                "el paso": (31.7619, -106.4850),
+                "detroit": (42.3314, -83.0458),
+                "nashville": (36.1627, -86.7816),
+                "memphis": (35.1495, -90.0490),
+                "portland": (45.5152, -122.6784),
+                "oklahoma city": (35.4676, -97.5164),
+                "las vegas": (36.1699, -115.1398),
+                "louisville": (38.2527, -85.7585),
+                "baltimore": (39.2904, -76.6122),
+                "milwaukee": (43.0389, -87.9065),
+                "albuquerque": (35.0844, -106.6504),
+                "tucson": (32.2226, -110.9747),
+                "fresno": (36.7378, -119.7871),
+                "mesa": (33.4152, -111.8315),
+                "sacramento": (38.5816, -121.4944),
+                "atlanta": (33.7490, -84.3880),
+                "kansas city": (39.0997, -94.5786),
+                "colorado springs": (38.8339, -104.8214),
+                "omaha": (41.2565, -95.9345),
+                "raleigh": (35.7796, -78.6382),
+                "miami": (25.7617, -80.1918),
+                "cleveland": (41.4993, -81.6944),
+                "tulsa": (36.1540, -95.9928),
+                "virginia beach": (36.8529, -75.9780),
+                "minneapolis": (44.9778, -93.2650),
+                "honolulu": (21.3099, -157.8581),
+                "tampa": (27.9506, -82.4572),
+                "new orleans": (29.9511, -90.0715),
+                "arlington": (32.7357, -97.1081),
+                "wichita": (37.6872, -97.3301),
+                "bakersfield": (35.3733, -119.0187)
+            }
+            return fallback_coords.get(city_name.lower())
+        
+        try:
+            # Use Google Geocoding API if available
+            geocoding_url = "https://maps.googleapis.com/maps/api/geocode/json"
+            params = {
+                "address": city_name,
+                "key": self.api_key
+            }
+            
+            response = requests.get(geocoding_url, params=params, timeout=self.timeout_s)
+            if response.status_code == 200:
+                data = response.json()
+                if data.get("results"):
+                    location = data["results"][0]["geometry"]["location"]
+                    return (location["lat"], location["lng"])
+        except Exception:
+            pass
+            
+        return None
+
     def fetch(self, city: City) -> Optional[np.ndarray]:
         """Return BGR image (np.uint8 HxWx3) or None if unavailable.
         Uses 2x scale to increase effective resolution when available.

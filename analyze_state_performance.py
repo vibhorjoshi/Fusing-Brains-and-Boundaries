@@ -104,7 +104,7 @@ with open("outputs/logs/performance_summary.md", "w") as f:
     f.write("| Method | Average IoU |\n")
     f.write("|--------|------------|\n")
     for method, avg in method_averages.items():
-        f.write(f"| {method.replace('_', ' ')} | {avg:.4f} |\n")
+        f.write(f"| {str(method).replace('_', ' ')} | {avg:.4f} |\n")
     
     f.write(f"\n**GPU vs CPU Improvement:** {improvement_pct:.2f}% average increase in IoU\n\n")
     
