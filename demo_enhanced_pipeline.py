@@ -224,8 +224,8 @@ def create_sample_demonstration():
     weight_values = list(weights.values())
     colors = ['#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4']
     
-    wedges, texts, autotexts = ax_weights.pie(weight_values, labels=weight_names, 
-                                             colors=colors, autopct='%1.1f%%', startangle=90)
+    _, _, _ = ax_weights.pie(weight_values, labels=weight_names, 
+                            colors=colors, autopct='%1.1f%%', startangle=90)
     ax_weights.set_title('Learned Fusion Weights\n(Enhanced RL Agent)', fontweight='bold')
     
     plt.tight_layout()
