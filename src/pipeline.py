@@ -104,7 +104,9 @@ class BuildingFootprintPipeline:
 		dataset = BuildingDataset(patches, masks)
 		train_size = int((1 - self.config.VALIDATION_SPLIT) * len(dataset))
 		val_size = len(dataset) - train_size
-		train_ds, val_ds = random_split(dataset, [train_size, val_size])
+		# Use fixed generator for reproducibility and to avoid leakage
+		generator = torch.Generator().manual_seed(42)
+		train_ds, val_ds = random_split(dataset, [train_size, val_size], generator=generator)
 
 		train_loader = DataLoader(train_ds, batch_size=self.config.BATCH_SIZE, shuffle=True, collate_fn=collate_fn, num_workers=self.config.NUM_WORKERS)
 		val_loader = DataLoader(val_ds, batch_size=self.config.BATCH_SIZE, shuffle=False, collate_fn=collate_fn, num_workers=self.config.NUM_WORKERS)
