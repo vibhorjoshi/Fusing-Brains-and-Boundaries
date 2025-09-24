@@ -91,6 +91,7 @@ building_footprint_results/data/
 *.pkl
 *.model
 
-# Logs
+# Logs (but allow outputs/logs/)
 *.log
 logs/
+!outputs/logs/
