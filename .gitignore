@@ -1,0 +1,87 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# PyTorch
+*.pth
+*.pt
+
+# Jupyter Notebook
+.ipynb_checkpoints
+
+# IPython
+profile_default/
+ipython_config.py
+
+# Environment variables
+.env
+.venv
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Project specific
+*.pdf
+*.docx
+kaggle.json
+*.png_*
+Plagiarism*.pdf
+reference*.pdf
+research*.docx
+
+# Large data files
+building_footprint_results/data/
+*.zip
+*.tif
+
+# Temporary outputs (keep structure but not large files)
+outputs/*/
+!outputs/.gitkeep
+
+# Model files (too large for git)
+*.pth
+*.pt
+*.pkl
+*.model
+
+# Logs
+*.log
+logs/

@@ -1,0 +1,9 @@
+Enhancement Step,IoU (%),F1 Score,Precision,Recall,Inference Time (ms),Speedup Factor,Cumulative Improvement,Key Innovation
+Step 1: Baseline Mask R-CNN,67.8,0.724,0.742,0.708,1247.3,1.0x,-,Standard segmentation
+Step 2: + GPU Acceleration,68.1,0.729,0.745,0.714,287.5,4.3x,+0.3% IoU,Parallel processing
+Step 3: + Enhanced Regularizers,69.4,0.741,0.758,0.725,265.8,4.7x,+1.6% IoU,GPU morphological ops
+Step 4: + RL Adaptive Fusion,71.2,0.756,0.771,0.742,248.2,5.0x,+3.4% IoU,Intelligent stream fusion
+Step 5: + Continuous Actions,72.6,0.768,0.783,0.754,231.7,5.4x,+4.8% IoU,PPO policy gradients
+Step 6: + CNN Features,73.8,0.785,0.796,0.775,198.4,6.3x,+6.0% IoU,Contextual embeddings
+Step 7: + Pre-trained Models,74.4,0.795,0.804,0.787,142.6,8.7x,+6.6% IoU,COCO initialization
+Step 8: + Multi-State Training,74.9,0.802,0.811,0.794,70.8,17.6x,+7.1% IoU,Geographical diversity
