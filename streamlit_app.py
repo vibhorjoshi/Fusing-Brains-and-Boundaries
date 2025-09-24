@@ -1,6 +1,12 @@
 import streamlit as st
 import numpy as np
-import cv2
+# Use cloud-compatible OpenCV replacement
+try:
+    import cv2
+    CV2_AVAILABLE = True
+except ImportError:
+    # Import our cloud-compatible replacement
+    from src.cv2_cloud_compat import cv2, CV2_AVAILABLE
 from PIL import Image
 import requests
 import torch

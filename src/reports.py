@@ -102,7 +102,12 @@ def create_demo_result_table(pipeline, n_samples: int = 12) -> Tuple[pd.DataFram
         return (a > t).astype(np.float32)
 
     def morph(p):
-        import cv2, numpy as np
+        # Use cloud-compatible OpenCV
+        try:
+            import cv2
+        except ImportError:
+            from .cv2_cloud_compat import cv2
+        import numpy as np
         a = p[0] if p.ndim == 3 else p
         b = (a > a.mean()).astype(np.uint8)
         k = np.ones((3, 3), np.uint8)

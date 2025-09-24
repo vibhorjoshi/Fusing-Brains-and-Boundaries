@@ -1,6 +1,10 @@
 from typing import Dict
 
-import cv2
+# Use cloud-compatible OpenCV
+try:
+    import cv2
+except ImportError:
+    from .cv2_cloud_compat import cv2
 import numpy as np
 
 
