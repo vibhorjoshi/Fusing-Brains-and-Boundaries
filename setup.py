@@ -1,0 +1,33 @@
+from setuptools import setup, find_packages
+
+setup(
+    name="geo_ai_research",
+    version="0.1.0",
+    packages=find_packages(),
+    include_package_data=True,
+    install_requires=[
+        "torch>=2.0.0",
+        "torchvision>=0.15.0",
+        "rasterio>=1.3.8",
+        "geopandas>=0.13.2",
+        "shapely>=2.0.1",
+        "scikit-image>=0.21.0",
+        "scipy>=1.11.0",
+        "numpy>=1.24.0",
+        "pandas>=2.0.0",
+        "matplotlib>=3.7.0",
+        "tqdm>=4.65.0",
+        "scikit-learn>=1.3.0",
+        "kaggle>=1.5.12",
+        "requests>=2.31.0",
+        "streamlit>=1.28.0",
+        "gradio>=4.0.0",
+        "plotly>=5.17.0",
+        "seaborn>=0.12.0",
+        "Pillow>=10.0.0",
+        "fastapi>=0.104.0",
+        "uvicorn>=0.24.0",
+        "pydantic>=2.4.0",
+    ],
+    python_requires=">=3.8",
+)

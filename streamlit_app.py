@@ -2,9 +2,39 @@ import streamlit as st
 import numpy as np
 import sys
 import os
+import importlib.util
+import warnings
 
 # Add the current directory to Python path to ensure imports work
 sys.path.append(os.path.abspath("."))
+
+# Function to safely import modules with fallbacks
+def safe_import(module_name, fallback_paths=None):
+    """Import a module with fallbacks for different environments."""
+    if fallback_paths is None:
+        fallback_paths = []
+    
+    # Try direct import first
+    try:
+        return importlib.import_module(module_name)
+    except ImportError:
+        # Try fallbacks
+        for path in fallback_paths:
+            try:
+                return importlib.import_module(path)
+            except ImportError:
+                continue
+        
+        # If all specific imports failed, try the cloud_fallbacks module
+        try:
+            fallback = importlib.import_module('cloud_fallbacks')
+            warnings.warn(f"Using cloud_fallbacks for {module_name}")
+            return fallback
+        except ImportError:
+            pass
+    
+    # If we get here, all imports failed
+    raise ImportError(f"Failed to import {module_name} or any fallbacks: {fallback_paths}")
 
 # Use cloud-compatible OpenCV replacement
 try:
@@ -13,10 +43,18 @@ try:
 except ImportError:
     # Import our cloud-compatible replacement
     try:
-        from src.cv2_cloud_compat import cv2, CV2_AVAILABLE
+        cv2_module = safe_import('cv2_cloud_compat', ['src.cv2_cloud_compat', '.cv2_cloud_compat'])
+        cv2 = cv2_module.cv2
+        CV2_AVAILABLE = cv2_module.CV2_AVAILABLE
+        warnings.warn("Using cloud-compatible OpenCV replacement")
     except ImportError:
-        # Alternative import path for Streamlit Cloud
-        from cv2_cloud_compat import cv2, CV2_AVAILABLE
+        warnings.warn("Failed to import OpenCV or its replacement")
+        # Define minimal compatibility
+        CV2_AVAILABLE = False
+        class MinimalCV2:
+            pass
+        cv2 = MinimalCV2()
+
 from PIL import Image
 import requests
 import torch
@@ -51,18 +89,29 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# Import local modules (these would be available in deployment)
+# Import local modules with fallbacks for different deployment environments
 try:
-    from src.citywise_scaffold import FewShotRLPipeline
-    from src.open_source_geo_ai import OpenSourceGeoAI
-    from src.live_automation_pipeline import LiveAutomationPipeline, run_automation_demo
-    from src.live_results_visualization import LiveResultsVisualization
-    from src.config import Config
+    # Try multiple import paths to handle different environments
+    modules = {}
+    modules['citywise'] = safe_import('citywise_scaffold', ['src.citywise_scaffold', '.src.citywise_scaffold'])
+    modules['geo_ai'] = safe_import('open_source_geo_ai', ['src.open_source_geo_ai', '.src.open_source_geo_ai'])
+    modules['pipeline'] = safe_import('live_automation_pipeline', ['src.live_automation_pipeline', '.src.live_automation_pipeline'])
+    modules['viz'] = safe_import('live_results_visualization', ['src.live_results_visualization', '.src.live_results_visualization'])
+    modules['config'] = safe_import('config', ['src.config', '.src.config'])
+    
+    # Extract the needed classes and functions
+    FewShotRLPipeline = modules['citywise'].FewShotRLPipeline
+    OpenSourceGeoAI = modules['geo_ai'].OpenSourceGeoAI
+    LiveAutomationPipeline = modules['pipeline'].LiveAutomationPipeline
+    run_automation_demo = modules['pipeline'].run_automation_demo
+    LiveResultsVisualization = modules['viz'].LiveResultsVisualization
+    Config = modules['config'].Config
+    
     LOCAL_MODE = True
     st.success("🚀 Live Automation Pipeline loaded successfully!")
-except ImportError:
+except Exception as e:
     LOCAL_MODE = False
-    st.warning("⚠️ Running in demo mode. Full functionality requires local installation.")
+    st.warning(f"⚠️ Running in demo mode. Import error: {str(e)}")
 
 @dataclass
 class DemoConfig:
@@ -979,7 +1028,23 @@ class StreamlitDemo:
     
     def _demo_stage_result(self, stage_name: str, duration: float):
         """Create demo stage result"""
-        from src.live_automation_pipeline import PipelineStage
+        try:
+            # Try to import PipelineStage from previously imported module
+            PipelineStage = modules['pipeline'].PipelineStage
+        except (NameError, AttributeError):
+            try:
+                # Fallback to direct import with multiple paths
+                pipeline_module = safe_import('live_automation_pipeline', ['src.live_automation_pipeline', '.src.live_automation_pipeline'])
+                PipelineStage = pipeline_module.PipelineStage
+            except ImportError:
+                # Define a minimal compatible class if import fails
+                class PipelineStage:
+                    def __init__(self, name, input_data, output_data, processing_time, metrics):
+                        self.name = name
+                        self.input_data = input_data
+                        self.output_data = output_data
+                        self.processing_time = processing_time
+                        self.metrics = metrics
         
         return PipelineStage(
             name=stage_name,
@@ -1611,4 +1676,18 @@ def main():
     demo.render_footer()
 
 if __name__ == "__main__":
-    main()
+    try:
+        main()
+    except Exception as e:
+        st.error(f"Error in application: {str(e)}")
+        st.exception(e)
+        st.write("Attempting to continue in limited mode...")
+        
+        # Minimal fallback UI
+        st.title("Building Footprint Extraction - Limited Mode")
+        st.write("The application encountered errors while loading. Some functionality may be limited.")
+        
+        with st.expander("Error Details"):
+            st.code(str(e))
+            import traceback
+            st.code(traceback.format_exc())
