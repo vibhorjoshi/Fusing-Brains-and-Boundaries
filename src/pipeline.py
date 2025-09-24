@@ -41,7 +41,11 @@ class BuildingFootprintPipeline:
 
 	# -------- Synthetic data generator (for quick demo) --------
 	def create_synthetic_data(self, n: int = 20) -> Tuple[List[np.ndarray], List[np.ndarray]]:
-		import cv2
+		# Use cloud-compatible OpenCV
+		try:
+			import cv2
+		except ImportError:
+			from .cv2_cloud_compat import cv2
 		patches, masks = [], []
 		H = W = self.config.PATCH_SIZE
 		rng = np.random.default_rng(42)
@@ -307,7 +311,12 @@ class BuildingFootprintPipeline:
 			t = a.mean() + 2 * a.std()
 			return (a > t).astype(np.float32)
 		def morph(p):
-			import cv2, numpy as np
+			# Use cloud-compatible OpenCV
+			try:
+				import cv2
+			except ImportError:
+				from .cv2_cloud_compat import cv2
+			import numpy as np
 			a = p[0] if p.ndim == 3 else p
 			b = (a > a.mean()).astype(np.uint8)
 			# simpler traditional baseline: single opening with smaller kernel
@@ -386,7 +395,11 @@ class BuildingFootprintPipeline:
 				thr = float(a.mean() + 0.5 * a.std())
 				rough = (a > thr).astype(np.float32)
 				# add random erosion or dilation to simulate model errors
-				import cv2
+				# Use cloud-compatible OpenCV
+				try:
+					import cv2
+				except ImportError:
+					from .cv2_cloud_compat import cv2
 				k = np.ones((3, 3), np.uint8)
 				if np.random.rand() < 0.5:
 					rough = cv2.morphologyEx(rough.astype(np.uint8), cv2.MORPH_ERODE, k, iterations=1).astype(np.float32)
@@ -578,7 +591,11 @@ class BuildingFootprintPipeline:
 		Outputs a metrics x methods table (CSV+PNG) and a JSON with method parameters.
 		"""
 		import json as _json
-		import cv2
+		# Use cloud-compatible OpenCV
+		try:
+			import cv2
+		except ImportError:
+			from .cv2_cloud_compat import cv2
 		import numpy as _np
 		import pandas as _pd
 		from sklearn.ensemble import RandomForestClassifier
@@ -807,7 +824,11 @@ class BuildingFootprintPipeline:
 		import pandas as pd
 		import time as _time
 		import numpy as _np
-		import cv2
+		# Use cloud-compatible OpenCV
+		try:
+			import cv2
+		except ImportError:
+			from .cv2_cloud_compat import cv2
 
 		loader = RasterDataLoader(self.config)
 		data = loader.sample_patches_from_state(state_name, max_patches=patches_per_state)

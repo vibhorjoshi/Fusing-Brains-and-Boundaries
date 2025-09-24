@@ -2,7 +2,11 @@ from collections import deque
 import random
 from typing import Dict, Tuple
 
-import cv2
+# Use cloud-compatible OpenCV
+try:
+    import cv2
+except ImportError:
+    from .cv2_cloud_compat import cv2
 import numpy as np
 import torch
 import torch.nn as nn
