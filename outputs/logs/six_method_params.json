@@ -1,0 +1,39 @@
+{
+  "Mask R-CNN": {
+    "epochs": 1,
+    "lr": 0.0005,
+    "batch_size": 4,
+    "backbone": "resnet50_fpn"
+  },
+  "RandomForest": {
+    "n_estimators": 50,
+    "max_depth": 12,
+    "features": [
+      "intensity",
+      "blur3",
+      "sobel_mag"
+    ],
+    "downsample": 128
+  },
+  "RT": {
+    "kernel": "3x3",
+    "op": "close",
+    "iterations": 1
+  },
+  "RR": {
+    "kernel": "5x5",
+    "ops": "open->close",
+    "iterations": 1
+  },
+  "FER": {
+    "edges": "Canny(50,150)",
+    "dilate_kernel": "3x3",
+    "combine": "edge|mask"
+  },
+  "RL Fusion": {
+    "iterations": 40,
+    "epsilon_decay": 0.995,
+    "batch_size": 32,
+    "lr": 0.001
+  }
+}
