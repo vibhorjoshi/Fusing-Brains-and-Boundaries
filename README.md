@@ -1,19 +1,32 @@
-# GPU-Accelerated Building Footprint Extraction
+# 🏗️ Fusing Brains and Boundaries: GPU-Accelerated Building Footprint Extraction
 
+[![Streamlit App](https://static.streamlit.io/badges/streamlit_badge_black_white.svg)](https://fusing-brains-boundaries.streamlit.app)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Python 3.8+](https://img.shields.io/badge/python-3.8+-blue.svg)](https://www.python.org/downloads/)
 [![PyTorch](https://img.shields.io/badge/PyTorch-2.0+-ee4c2c?logo=pytorch&logoColor=white)](https://pytorch.org/)
 [![CUDA](https://img.shields.io/badge/CUDA-11.8+-76B900?logo=nvidia&logoColor=white)](https://developer.nvidia.com/cuda-downloads)
 [![arXiv](https://img.shields.io/badge/arXiv-2409.xxxxx-b31b1b.svg)](https://arxiv.org/abs/2409.xxxxx)
 [![Paper](https://img.shields.io/badge/Paper-IEEE%20Access-blue)](https://ieeexplore.ieee.org/)
-[![Demo](https://img.shields.io/badge/🤗%20Hugging%20Face-Demo-blue)](https://huggingface.co/spaces/vibhorjoshi/building-footprint-extraction)
-[![GitHub Stars](https://img.shields.io/github/stars/vibhorjoshi/geo-ai-research-paper?style=social)](https://github.com/vibhorjoshi/geo-ai-research-paper)
+[![GitHub Stars](https://img.shields.io/github/stars/vibhorjoshi/Fusing-Brains-and-Boundaries?style=social)](https://github.com/vibhorjoshi/Fusing-Brains-and-Boundaries)
 
 > 🏆 **State-of-the-Art Performance**: 18.7x speedup with 4.98% IoU improvement over CPU implementations
 > 
 > 🌍 **Large-Scale Validation**: Tested across 8 US states with 130M+ building footprints
 > 
-> 🚀 **Ready for Production**: Complete pipeline from Google Maps API to deployment
+> 🚀 **Live Demo Available**: [https://fusing-brains-boundaries.streamlit.app](https://fusing-brains-boundaries.streamlit.app)
+> 
+> 🤖 **Complete Automation**: End-to-end pipeline with real-time visualization
+
+## 🎯 **NEW: Live Automation Pipeline**
+
+### 🚀 **Try the Live Demo**: [https://fusing-brains-boundaries.streamlit.app](https://fusing-brains-boundaries.streamlit.app)
+
+**Features:**
+- 🤖 **11-Stage Automated Processing** with real-time visualization
+- 📊 **Advanced Results Dashboard** with 5-tab interface  
+- 🌐 **Free APIs** - No keys required (OpenStreetMap, NASA MODIS)
+- 💾 **Complete Export System** - JSON/CSV/HTML reports
+- 🎮 **Interactive Controls** - Patch size selection, live progress tracking
 
 This repository contains the implementation for a **GPU-accelerated building footprint extraction and regularization pipeline**. The system combines state-of-the-art deep learning techniques with traditional image processing methods in a hybrid architecture, achieving unprecedented performance in geographic AI applications.
 
