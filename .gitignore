@@ -72,9 +72,18 @@ building_footprint_results/data/
 *.zip
 *.tif
 
-# Temporary outputs (keep structure but not large files)
-outputs/*/
-!outputs/.gitkeep
+# Allow important result files but exclude large model files
+!outputs/enhanced_results/
+!outputs/lapnet_demo/
+!outputs/synthetic_experiment/
+!outputs/figures/
+!outputs/demonstration/
+!outputs/citywise_live/
+!outputs/logs/
+!outputs/*.md
+!outputs/*.csv
+!outputs/*.json
+!outputs/*.png
 
 # Model files (too large for git)
 *.pth

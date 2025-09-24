@@ -1,0 +1,2 @@
+city,source,train_samples,rewards_len,rewards_last,has_lapnet
+"Albany, NY",fallback_local_patch,24,40,0.20056682156651887,True
