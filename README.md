@@ -42,8 +42,8 @@ The system uses a four-layer hybrid architecture:
 
 1. Clone this repository:
 ```bash
-git clone https://github.com/yourusername/building-footprint-extraction.git
-cd building-footprint-extraction
+git clone https://github.com/vibhorjoshi/geo-ai-research-paper.git
+cd geo-ai-research-paper
 ```
 
 2. Create and activate a virtual environment:
