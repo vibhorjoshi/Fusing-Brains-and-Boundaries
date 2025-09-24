@@ -1,12 +1,22 @@
 import streamlit as st
 import numpy as np
+import sys
+import os
+
+# Add the current directory to Python path to ensure imports work
+sys.path.append(os.path.abspath("."))
+
 # Use cloud-compatible OpenCV replacement
 try:
     import cv2
     CV2_AVAILABLE = True
 except ImportError:
     # Import our cloud-compatible replacement
-    from src.cv2_cloud_compat import cv2, CV2_AVAILABLE
+    try:
+        from src.cv2_cloud_compat import cv2, CV2_AVAILABLE
+    except ImportError:
+        # Alternative import path for Streamlit Cloud
+        from cv2_cloud_compat import cv2, CV2_AVAILABLE
 from PIL import Image
 import requests
 import torch
