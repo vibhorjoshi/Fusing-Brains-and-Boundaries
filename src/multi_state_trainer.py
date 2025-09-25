@@ -281,7 +281,7 @@ class MultiStateTrainingPipeline:
                 targets = [{k: v.to(self.device) for k, v in t.items()} for t in targets]
                 
                 # Zero gradients
-                optimizer.zero_grad()
+                if optimizer is not None: optimizer.zero_grad()
                 
                 if self.mask_rcnn.use_amp:
                     # Mixed precision forward pass

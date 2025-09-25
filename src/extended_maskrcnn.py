@@ -65,11 +65,11 @@ class ExtendedMaskRCNNTrainer:
             model = maskrcnn_resnet50_fpn(weights=MaskRCNN_ResNet50_FPN_Weights.COCO_V1)
         
         # Replace classification head for our number of classes
-        in_features = model.roi_heads.box_predictor.cls_score.in_features
+        in_features = getattr(getattr(model.roi_heads.box_predictor, "cls_score", object()), "in_features", 1024)
         model.roi_heads.box_predictor = FastRCNNPredictor(in_features, num_classes)
         
         # Replace mask predictor head
-        in_features_mask = model.roi_heads.mask_predictor.conv5_mask.in_channels
+        in_features_mask = getattr(getattr(model.roi_heads.mask_predictor, "conv5_mask", object()), "in_channels", 256)
         hidden_layer = 256
         model.roi_heads.mask_predictor = MaskRCNNPredictor(in_features_mask, hidden_layer, num_classes)
         
@@ -207,7 +207,7 @@ class ExtendedMaskRCNNTrainer:
                         losses = sum(loss for loss in loss_dict.values())
                         
                     # Backward and optimize with gradient scaling
-                    self.optimizer.zero_grad()
+                    self.if optimizer is not None: optimizer.zero_grad()
                     self.scaler.scale(losses).backward()
                     self.scaler.step(self.optimizer)
                     self.scaler.update()
@@ -217,7 +217,7 @@ class ExtendedMaskRCNNTrainer:
                     losses = sum(loss for loss in loss_dict.values())
                     
                     # Backward and optimize
-                    self.optimizer.zero_grad()
+                    self.if optimizer is not None: optimizer.zero_grad()
                     losses.backward()
                     self.optimizer.step()
                 

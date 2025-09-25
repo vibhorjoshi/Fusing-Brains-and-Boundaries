@@ -179,10 +179,12 @@ class AdaptiveFusion:
 		target = rewards + (0.99 * next_q * (~dones))
 
 		loss = nn.MSELoss()(q_values, target.detach())
-		self.optimizer.zero_grad()
+		if self.optimizer is not None:
+			self.optimizer.zero_grad()
 		loss.backward()
 		nn.utils.clip_grad_norm_(self.q_network.parameters(), 1.0)
-		self.optimizer.step()
+		if self.optimizer is not None:
+			self.optimizer.step()
 		return float(loss.item())
 
 	def update_target_network(self):

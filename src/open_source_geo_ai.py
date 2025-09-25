@@ -493,7 +493,7 @@ class OpenSourceGeoAI:
             points.append([x, y])
         
         points = np.array(points, dtype=np.int32)
-        cv2.fillPoly(image, [points], water_color)
+        cv2.fillPoly(image, [np.array(points, dtype=np.int32)], water_color)
     
     def _add_vegetation(self, image: np.ndarray, density: str):
         """Add vegetation patches."""

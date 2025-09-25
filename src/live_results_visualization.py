@@ -28,7 +28,7 @@ class LiveResultsVisualization:
             "Final Results", "IoU Calculation"
         ]
         
-    def display_live_results_section(self, automation_results: Dict = None):
+    def display_live_results_section(self, automation_results: Optional[Dict[str, Any]] = None):
         """Display comprehensive results section with live image generation"""
         st.markdown("---")
         st.markdown("# 🎯 Live Results & Visualization Center")
@@ -55,7 +55,7 @@ class LiveResultsVisualization:
         with tab5:
             self._display_download_center(automation_results)
     
-    def _display_live_images_tab(self, automation_results: Dict = None):
+    def _display_live_images_tab(self, automation_results: Optional[Dict[str, Any]] = None):
         """Display live generated images from each pipeline stage"""
         st.markdown("## 📸 Live Pipeline Images")
         st.markdown("Real-time visualization of images at each processing stage")
@@ -105,7 +105,7 @@ class LiveResultsVisualization:
         # Display detailed view of selected stage
         self._display_detailed_stage_view(selected_stage, stages[selected_stage])
     
-    def _display_metrics_dashboard(self, automation_results: Dict = None):
+    def _display_metrics_dashboard(self, automation_results: Optional[Dict[str, Any]] = None):
         """Display comprehensive metrics dashboard"""
         st.markdown("## 📊 Live Metrics Dashboard")
         
@@ -144,7 +144,7 @@ class LiveResultsVisualization:
         df = pd.DataFrame(stage_metrics)
         st.dataframe(df, width='stretch')
     
-    def _display_pipeline_flow(self, automation_results: Dict = None):
+    def _display_pipeline_flow(self, automation_results: Optional[Dict[str, Any]] = None):
         """Display interactive pipeline flow visualization"""
         st.markdown("## 🔄 Interactive Pipeline Flow")
         
@@ -171,7 +171,7 @@ class LiveResultsVisualization:
             st.write("- 🔄 Max Iterations: 5")
             st.write("- 📈 Convergence Threshold: 0.001")
     
-    def _display_performance_charts(self, automation_results: Dict = None):
+    def _display_performance_charts(self, automation_results: Optional[Dict[str, Any]] = None):
         """Display comprehensive performance charts"""
         st.markdown("## 📈 Performance Analytics")
         
@@ -193,7 +193,7 @@ class LiveResultsVisualization:
         fig_comparison = self._create_method_comparison_chart(comparison_data)
         st.plotly_chart(fig_comparison, width='stretch')
     
-    def _display_download_center(self, automation_results: Dict = None):
+    def _display_download_center(self, automation_results: Optional[Dict[str, Any]] = None):
         """Display comprehensive download center"""
         st.markdown("## 💾 Download Center")
         st.markdown("Download results, images, and reports from the automation pipeline")

@@ -311,7 +311,7 @@ class GPUAdaptiveFusion:
                 loss = F.smooth_l1_loss(q_values, target_q_values)
                 
             # Scale gradients and optimize
-            self.optimizer.zero_grad()
+            self.if optimizer is not None: optimizer.zero_grad()
             self.scaler.scale(loss).backward()
             self.scaler.step(self.optimizer)
             self.scaler.update()
@@ -331,7 +331,7 @@ class GPUAdaptiveFusion:
             loss = F.smooth_l1_loss(q_values, target_q_values)
             
             # Optimize
-            self.optimizer.zero_grad()
+            self.if optimizer is not None: optimizer.zero_grad()
             loss.backward()
             self.optimizer.step()
             
