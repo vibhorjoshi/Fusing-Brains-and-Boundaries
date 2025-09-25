@@ -22,7 +22,13 @@ from .regularizer import HybridRegularizer
 from .adaptive_fusion import AdaptiveFusion
 from .post_processor import PostProcessor
 from .evaluator import Evaluator
-from .data_handler import RasterDataLoader, BuildingDataset, collate_fn
+from .data_handler import RasterDataLoader, Bu		for na	for n	for n	for n	for name, _, t, _ in methods:
+		row[name] = str(f"{float(t):.3f}")e, m, _, _ in methods:
+		row[name] = str(f"{float(m.get('iou', 0.0) * 100.0):.2f}")e, _, _, lc in methods:
+		row[name] = str(f"{float(lc):.2f}")e, m, _, _ in methods:
+		row[name] = str(f"{float(robust_score(m.get('hausdorff_distance', float('inf')))):.2f}"), m, _, _ in methods:
+			val = m.get(key, 0.0) * scale
+			row[name] = str(f"{float(val):.2f}")ingDataset, collate_fn
 from .reports import plot_iou_comparison, draw_architecture_pipeline
 
 
@@ -68,7 +74,7 @@ class BuildingFootprintPipeline:
 					angle = float(rng.uniform(0, 180))
 					rect = ((cx, cy), (w2, h2), angle)
 					box = cv2.boxPoints(rect).astype(np.int32)
-					cv2.fillPoly(m, [box], 1.0)
+					cv2.fillPoly(m, [np.array(box, dtype=np.int32)], 1.0)
 			# add holes and boundary noise
 			noise = (rng.random((H, W)) < 0.01).astype(np.float32)
 			ermode = cv2.MORPH_ERODE if rng.random() < 0.5 else cv2.MORPH_OPEN
@@ -772,27 +778,27 @@ class BuildingFootprintPipeline:
 			row = {"Metric": metric_name}
 			for name, m, _, _ in methods:
 				val = m.get(key, 0.0) * scale
-				row[name] = float(val)
+				row[name] = f"{float(val):.2f}"
 			rows.append(row)
 		# Robustness row
 		row = {"Metric": "Robustness"}
 		for name, m, _, _ in methods:
-			row[name] = float(robust_score(m.get("hausdorff_distance", float("inf"))))
+			row[name] = f"{float(robust_score(m.get('hausdorff_distance', float('inf')))):.2f}"
 		rows.append(row)
 		# Learning Capability row
 		row = {"Metric": "Learning Capability"}
 		for name, _, _, lc in methods:
-			row[name] = float(lc)
+			row[name] = f"{float(lc):.2f}"
 		rows.append(row)
 		# Accuracy duplicates IoU in %
 		row = {"Metric": "Accuracy (%)"}
 		for name, m, _, _ in methods:
-			row[name] = float(m.get("iou", 0.0) * 100.0)
+			row[name] = f"{float(m.get('iou', 0.0) * 100.0):.2f}"
 		rows.append(row)
 		# Processing Time
 		row = {"Metric": "Processing Time (s)"}
 		for name, _, t, _ in methods:
-			row[name] = float(t)
+			row[name] = f"{float(t):.3f}"
 		rows.append(row)
 
 		df = _pd.DataFrame(rows)

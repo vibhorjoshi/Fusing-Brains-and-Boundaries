@@ -52,7 +52,88 @@ except ImportError:
         # Define minimal compatibility
         CV2_AVAILABLE = False
         class MinimalCV2:
-            pass
+            # Font constants
+            FONT_HERSHEY_SIMPLEX = 0
+            
+            # Morphology constants  
+            MORPH_RECT = 0
+            MORPH_CLOSE = 3
+            MORPH_OPEN = 2
+            
+            @staticmethod
+            def rectangle(img, pt1, pt2, color, thickness=-1):
+                """Dummy rectangle function"""
+                return img
+                
+            @staticmethod
+            def putText(img, text, org, fontFace, fontScale, color, thickness=1):
+                """Dummy putText function"""
+                return img
+                
+            @staticmethod
+            def getStructuringElement(shape, ksize):
+                """Dummy getStructuringElement function"""
+                return np.ones(ksize, dtype=np.uint8)
+                
+            @staticmethod
+            def morphologyEx(src, op, kernel, iterations=1):
+                """Dummy morphologyEx function"""
+                return src
+                
+            @staticmethod
+            def Canny(image, threshold1, threshold2):
+                """Dummy Canny edge detection"""
+                return np.zeros_like(image)
+                
+            @staticmethod
+            def dilate(src, kernel, iterations=1):
+                """Dummy dilate function"""
+                return src
+                
+            @staticmethod
+            def bitwise_and(src1, src2):
+                """Dummy bitwise_and function"""
+                return src1
+                
+            @staticmethod
+            def bitwise_not(src):
+                """Dummy bitwise_not function"""
+                return 255 - src
+                
+            @staticmethod
+            def GaussianBlur(src, ksize, sigmaX):
+                """Dummy GaussianBlur function"""
+                return src
+                
+            @staticmethod
+            def addWeighted(src1, alpha, src2, beta, gamma):
+                """Dummy addWeighted function"""
+                return src1
+                
+            @staticmethod
+            def resize(src, dsize, interpolation=None):
+                """Dummy resize function"""
+                return src
+                
+            @staticmethod
+            def contourArea(contour):
+                """Dummy contourArea function"""
+                return 100
+                
+            @staticmethod
+            def boundingRect(contour):
+                """Dummy boundingRect function"""
+                return (0, 0, 10, 10)
+                
+            @staticmethod
+            def findContours(image, mode, method):
+                """Dummy findContours function"""
+                return ([], None)
+                
+            # Contour retrieval constants
+            RETR_EXTERNAL = 0
+            CHAIN_APPROX_SIMPLE = 2
+        
         cv2 = MinimalCV2()
 
 from PIL import Image
@@ -150,7 +231,19 @@ class StreamlitDemo:
         self.config = DemoConfig()
         self.geo_ai_client = None
         self.pipeline = None
-        self.results_visualizer = LiveResultsVisualization()
+        
+        # Initialize results visualizer with fallback for demo mode
+        if LOCAL_MODE:
+            try:
+                self.results_visualizer = LiveResultsVisualization()
+            except NameError:
+                # Fallback if import failed
+                from cloud_fallbacks import LiveResultsVisualization as FallbackViz
+                self.results_visualizer = FallbackViz()
+        else:
+            # Demo mode fallback
+            from cloud_fallbacks import LiveResultsVisualization as FallbackViz
+            self.results_visualizer = FallbackViz()
         
         if LOCAL_MODE:
             try:

@@ -21,7 +21,7 @@ def _find_largest_contour(mask: np.ndarray) -> Optional[np.ndarray]:
 def _rasterize_polygon(vertices: np.ndarray, shape: Tuple[int, int]) -> np.ndarray:
     poly = vertices.reshape((-1, 1, 2)).astype(np.int32)
     canvas = np.zeros(shape, dtype=np.uint8)
-    cv2.fillPoly(canvas, [poly], 1)
+    cv2.fillPoly(canvas, [np.array(poly, dtype=np.int32)], 1)
     return canvas.astype(np.float32)
 
 

@@ -80,7 +80,7 @@ def save_input_mask_3d_proofs(config, n_states: int = 2, patches_per_state: int 
             ax4.set_title('Paired Binary Mask (Z∈{0,1})')
             ax4.set_xlabel('X'); ax4.set_ylabel('Y')
 
-            fig.tight_layout(rect=[0, 0.03, 1, 0.95])
+            fig.tight_layout(rect=(0.0, 0.03, 1.0, 0.95))
             save_path = out_dir / f"proof_input_mask3d_{state}_{idx}.png"
             fig.savefig(save_path, dpi=200, bbox_inches='tight')
             plt.close(fig)

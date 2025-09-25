@@ -1,0 +1,59 @@
+version: '3.8'
+
+services:
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    restart: always
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./models:/app/models
+      - ./logs:/app/logs
+      - ./data:/app/data
+      - ./temp:/app/temp
+    env_file:
+      - .env
+    depends_on:
+      - redis
+      - mongodb
+    networks:
+      - building_footprint_network
+    deploy:
+      resources:
+        limits:
+          cpus: '4.0'
+          memory: 8G
+
+  redis:
+    image: redis:6.2-alpine
+    restart: always
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - building_footprint_network
+    command: redis-server --appendonly yes
+
+  mongodb:
+    image: mongo:5.0
+    restart: always
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongodb_data:/data/db
+    networks:
+      - building_footprint_network
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: ${MONGODB_USERNAME}
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGODB_PASSWORD}
+
+networks:
+  building_footprint_network:
+    driver: bridge
+
+volumes:
+  redis_data:
+  mongodb_data:

@@ -1,0 +1,23 @@
+name: buildingapi
+channels:
+  - conda-forge
+  - defaults
+dependencies:
+  - python=3.9
+  - gdal=3.6.*
+  - rasterio=1.3.*
+  - shapely=2.0.*
+  - pyproj=3.5.*
+  - geopandas=0.13.*
+  - fiona=1.9.*
+  - rtree=1.0.*
+  - libspatialindex
+  - proj
+  - geos
+  - opencv=4.8.*
+  - pip
+  - pip:
+    # These will be installed via pip from requirements.txt
+    - fastapi
+    - uvicorn
+    - pydantic

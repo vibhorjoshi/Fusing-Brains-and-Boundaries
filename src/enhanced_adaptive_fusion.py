@@ -657,7 +657,7 @@ class EnhancedAdaptiveFusion:
                         loss = actor_loss + self.value_coef * critic_loss - self.entropy_coef * entropy
                     
                     # Optimize
-                    self.optimizer.zero_grad()
+                    self.if optimizer is not None: optimizer.zero_grad()
                     self.scaler.scale(loss).backward()
                     self.scaler.step(self.optimizer)
                     self.scaler.update()
@@ -692,7 +692,7 @@ class EnhancedAdaptiveFusion:
                     loss = actor_loss + self.value_coef * critic_loss - self.entropy_coef * entropy
                     
                     # Optimize
-                    self.optimizer.zero_grad()
+                    self.if optimizer is not None: optimizer.zero_grad()
                     loss.backward()
                     self.optimizer.step()
                 

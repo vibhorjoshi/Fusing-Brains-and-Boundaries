@@ -273,7 +273,7 @@ def generate_ablation_study(output_dir: Path):
     contributions = [iou_ablation[i+1] - iou_ablation[i] for i in range(len(iou_ablation)-1)]
     component_names = [c.replace('+ ', '') for c in components[1:]]
     
-    colors = plt.cm.Set3(np.linspace(0, 1, len(component_names)))
+    colors = plt.get_cmap('Set3')(np.linspace(0, 1, len(component_names)))
     bars = ax2.bar(range(len(component_names)), contributions, color=colors, alpha=0.8)
     ax2.set_xticks(range(len(component_names)))
     ax2.set_xticklabels(component_names, rotation=45, ha='right')
@@ -338,7 +338,7 @@ def generate_efficiency_analysis(output_dir: Path):
     ax1.grid(True, alpha=0.3)
     
     # Speedup factors
-    colors = plt.cm.viridis(np.linspace(0, 1, len(components)))
+    colors = plt.get_cmap('viridis')(np.linspace(0, 1, len(components)))
     bars = ax2.bar(x, speedups, color=colors, alpha=0.8)
     ax2.set_xlabel('Components', fontsize=12)
     ax2.set_ylabel('Speedup Factor', fontsize=12)

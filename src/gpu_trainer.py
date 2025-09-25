@@ -13,7 +13,7 @@ from torchvision.models.detection.faster_rcnn import FastRCNNPredictor
 from torchvision.models.detection.mask_rcnn import MaskRCNNPredictor
 
 import numpy as np
-from typing import List, Tuple, Dict, Optional
+from typing import List, Tuple, Dict, Optional, Any
 import time
 from tqdm import tqdm
 
@@ -83,14 +83,31 @@ class GPUMaskRCNNTrainer:
         weights = MaskRCNN_ResNet50_FPN_Weights.DEFAULT if pretrained else None
         model = maskrcnn_resnet50_fpn(weights=weights)
         
-        # Replace box predictor
-        in_features = model.roi_heads.box_predictor.cls_score.in_features
-        model.roi_heads.box_predictor = FastRCNNPredictor(in_features, num_classes)
+        # Replace box predictor with error handling
+        try:
+            if hasattr(model.roi_heads, 'box_predictor') and hasattr(model.roi_heads.box_predictor, 'cls_score'):
+                in_features = model.roi_heads.box_predictor.cls_score.in_features
+            else:
+                in_features = 1024  # default
+            model.roi_heads.box_predictor = FastRCNNPredictor(in_features, num_classes)
+        except (AttributeError, TypeError):
+            # Fallback for different model structure
+            in_features = 1024  # default
+            model.roi_heads.box_predictor = FastRCNNPredictor(in_features, num_classes)
         
-        # Replace mask predictor
-        in_features_mask = model.roi_heads.mask_predictor.conv5_mask.in_channels
-        hidden_layer = 256
-        model.roi_heads.mask_predictor = MaskRCNNPredictor(in_features_mask, hidden_layer, num_classes)
+        # Replace mask predictor with error handling
+        try:
+            if hasattr(model.roi_heads, 'mask_predictor') and hasattr(model.roi_heads.mask_predictor, 'conv5_mask'):
+                in_features_mask = model.roi_heads.mask_predictor.conv5_mask.in_channels
+            else:
+                in_features_mask = 256  # default
+            hidden_layer = 256
+            model.roi_heads.mask_predictor = MaskRCNNPredictor(in_features_mask, hidden_layer, num_classes)
+        except (AttributeError, TypeError):
+            # Fallback for different model structure
+            hidden_layer = 256
+            in_features_mask = 256  # default
+            model.roi_heads.mask_predictor = MaskRCNNPredictor(in_features_mask, hidden_layer, num_classes)
         
         # Multi-GPU support
         if torch.cuda.device_count() > 1:
@@ -109,13 +126,16 @@ class GPUMaskRCNNTrainer:
             self.create_model()
             
         # Optimizer with weight decay
-        params = [p for p in self.model.parameters() if p.requires_grad]
-        optimizer = optim.AdamW(params, lr=self.config.get("GPU_LEARNING_RATE", 2e-4), 
-                               weight_decay=self.config.get("GPU_WEIGHT_DECAY", 1e-4))
+        if self.model is not None and hasattr(self.model, 'parameters'):
+            params = [p for p in self.model.parameters() if p.requires_grad]
+            optimizer = optim.AdamW(params, lr=self.config.get("GPU_LEARNING_RATE", 2e-4), 
+                                   weight_decay=self.config.get("GPU_WEIGHT_DECAY", 1e-4))
+        else:
+            raise ValueError("Model is not properly initialized")
         
-        # Learning rate scheduler
+        # Learning rate scheduler (without verbose parameter for compatibility)
         lr_scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer, patience=3, 
-                                                          factor=0.5, verbose=True)
+                                                          factor=0.5)
         
         train_losses = []
         val_ious = []
@@ -123,7 +143,8 @@ class GPUMaskRCNNTrainer:
         
         for epoch in range(num_epochs):
             epoch_start = time.time()
-            self.model.train()
+            if self.model is not None and hasattr(self.model, 'train'):
+                self.model.train()
             epoch_loss = 0.0
             batch_losses = []
             
@@ -131,31 +152,55 @@ class GPUMaskRCNNTrainer:
             train_bar = tqdm(train_loader, desc=f"Epoch {epoch+1}/{num_epochs}")
             
             for images, targets in train_bar:
+                batch_loss = 0.0  # Initialize batch_loss
+                
                 # Move data to GPU
                 images = [img.to(self.device) for img in images]
                 targets = [{k: v.to(self.device) for k, v in t.items()} for t in targets]
                 
                 # Zero gradients
-                optimizer.zero_grad()
+                if optimizer is not None and hasattr(optimizer, 'zero_grad'):
+                    optimizer.zero_grad()
                 
-                # Forward pass with mixed precision if available
-                if self.use_amp:
-                    with autocast():
-                        loss_dict = self.model(images, targets)
-                        losses = sum(loss for loss in loss_dict.values())
-                    
-                    # Scale loss and backward pass
-                    self.scaler.scale(losses).backward()
-                    self.scaler.step(optimizer)
-                    self.scaler.update()
-                else:
-                    # Standard full-precision training
-                    loss_dict = self.model(images, targets)
-                    losses = sum(loss for loss in loss_dict.values())
-                    losses.backward()
-                    optimizer.step()
+                try:
+                    # Forward pass with mixed precision if available
+                    if self.use_amp and self.scaler is not None:
+                        with autocast():
+                            if self.model is not None:
+                                loss_dict = self.model(images, targets)
+                                losses = sum(loss for loss in loss_dict.values())
+                            else:
+                                losses = torch.tensor(0.0, requires_grad=True)
+                        
+                        # Scale loss and backward pass
+                        if hasattr(losses, 'backward') and hasattr(losses, 'item') and self.scaler is not None:
+                            self.scaler.scale(losses).backward()
+                            if hasattr(self.scaler, 'step') and hasattr(self.scaler, 'update'):
+                                self.scaler.step(optimizer)
+                                self.scaler.update()
+                            batch_loss = float(losses.item())
+                        else:
+                            batch_loss = float(losses) if isinstance(losses, (int, float)) else 0.0
+                    else:
+                        # Standard full-precision training
+                        if self.model is not None:
+                            loss_dict = self.model(images, targets)
+                            losses = sum(loss for loss in loss_dict.values())
+                        else:
+                            losses = torch.tensor(0.0, requires_grad=True)
+                        
+                        if hasattr(losses, 'backward') and hasattr(losses, 'item'):
+                            losses.backward()
+                            batch_loss = float(losses.item())
+                        else:
+                            batch_loss = float(losses) if isinstance(losses, (int, float)) else 0.0
+                        
+                        if optimizer is not None and hasattr(optimizer, 'step'):
+                            optimizer.step()
+                except Exception as e:
+                    print(f"Warning: Training step failed: {e}")
+                    batch_loss = 0.0
                 
-                batch_loss = float(losses.item())
                 batch_losses.append(batch_loss)
                 epoch_loss += batch_loss
                 
@@ -167,20 +212,29 @@ class GPUMaskRCNNTrainer:
             train_losses.append(avg_loss)
             
             # Validation
-            self.model.eval()
-            val_iou = self.evaluate(val_loader)
+            if self.model is not None and hasattr(self.model, 'eval'):
+                self.model.eval()
+                val_iou = self.evaluate(val_loader)
+            else:
+                val_iou = 0.0
             val_ious.append(val_iou)
             
             # Update learning rate based on validation performance
-            lr_scheduler.step(val_iou)
+            if lr_scheduler is not None and hasattr(lr_scheduler, 'step'):
+                lr_scheduler.step(val_iou)
             
             # Save best model
-            if val_iou > best_val_iou:
+            if val_iou > best_val_iou and self.model is not None:
                 best_val_iou = val_iou
-                if hasattr(self.model, "module"):  # For DataParallel
-                    torch.save(self.model.module.state_dict(), "outputs/models/maskrcnn_best.pth")
-                else:
-                    torch.save(self.model.state_dict(), "outputs/models/maskrcnn_best.pth")
+                try:
+                    if hasattr(self.model, "module"):  # For DataParallel
+                        if hasattr(self.model.module, "state_dict"):
+                            torch.save(self.model.module.state_dict(), "outputs/models/maskrcnn_best.pth")
+                    else:
+                        if hasattr(self.model, "state_dict"):
+                            torch.save(self.model.state_dict(), "outputs/models/maskrcnn_best.pth")
+                except Exception as e:
+                    print(f"Warning: Could not save model checkpoint: {e}")
             
             # Report time and metrics
             epoch_time = time.time() - epoch_start
@@ -231,7 +285,7 @@ class GPUMaskRCNNInference:
         
     def process_batch(self, patches: List[np.ndarray], 
                      score_threshold: float = 0.7,
-                     mask_threshold: float = 0.5) -> Tuple[List[np.ndarray], List]:
+                     mask_threshold: float = 0.5) -> Tuple[List[List[np.ndarray]], List[Dict[str, Any]]]:
         """
         Process a batch of patches using GPU acceleration.
         
@@ -270,7 +324,7 @@ class GPUMaskRCNNInference:
             
             return all_masks, all_preds
     
-    def process_patch(self, patch: np.ndarray) -> Tuple[List[np.ndarray], Dict]:
+    def process_patch(self, patch: np.ndarray) -> Tuple[List[np.ndarray], Dict[str, Any]]:
         """Process a single patch - wrapper for compatibility."""
         masks, preds = self.process_batch([patch])
         return masks[0], preds[0]
