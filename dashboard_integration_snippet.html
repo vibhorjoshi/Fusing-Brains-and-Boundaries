@@ -1,0 +1,158 @@
+<!-- 
+INTEGRATION CODE SNIPPET FOR index.html
+This file contains the code to integrate the Alabama City map visualization
+and live pipeline visualization into the existing dashboard.
+
+HOW TO USE:
+1. Copy the HTML sections below into the appropriate sections of index.html
+2. Make sure to include the script tags at the bottom of the file
+3. Add the CSS styles to your existing styles
+-->
+
+<!-- Add this inside your existing dashboard-grid div -->
+<div class="dashboard-grid">
+    <!-- Existing cards here -->
+    
+    <!-- Alabama City Performance Map -->
+    <div class="dashboard-card">
+        <div class="card-header">
+            <span class="card-icon">🗺️</span>
+            <h3 class="card-title">Alabama City Performance</h3>
+        </div>
+        <div id="alabama-map-container" class="map-container"></div>
+    </div>
+    
+    <!-- Live Pipeline Visualization -->
+    <div class="dashboard-card">
+        <div class="card-header">
+            <span class="card-icon">⚙️</span>
+            <h3 class="card-title">Live Processing Pipeline</h3>
+        </div>
+        <div id="pipeline-visualizer-container"></div>
+    </div>
+</div>
+
+<!-- Add these script tags just before your closing </body> tag -->
+<!-- 
+<script src="https://maps.googleapis.com/maps/api/js?key=YOUR_API_KEY&libraries=visualization"></script>
+<script src="alabama_cities_map.js"></script>
+<script src="live_pipeline_visualizer.js"></script>
+<script>
+    // Initialize the components when the page loads
+    document.addEventListener('DOMContentLoaded', function() {
+        // Initialize the Alabama Map
+        initializeAlabamaMap();
+        
+        // Initialize the Pipeline Visualizer
+        const pipelineVisualizer = new LivePipelineVisualizer('#pipeline-visualizer-container', {
+            animationDuration: 1000,
+            showMetrics: true,
+            autoUpdate: true,
+            updateInterval: 5000
+        });
+        
+        // Start the pipeline visualization
+        pipelineVisualizer.startPipeline();
+        
+        // Add event listeners for dashboard controls
+        document.getElementById('refresh-button').addEventListener('click', function() {
+            pipelineVisualizer.refreshData();
+            // Re-initialize the Alabama map to refresh data
+            initializeAlabamaMap();
+        });
+    });
+</script>
+-->
+
+<!-- Add these CSS styles to your existing <style> tag -->
+<!-- 
+/* Map Container Styles */
+.map-container {
+    height: 500px;
+    width: 100%;
+    border-radius: 15px;
+    overflow: hidden;
+    border: 1px solid rgba(0, 212, 255, 0.3);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+/* Pipeline Visualizer Styles */
+.pipeline-step {
+    background: rgba(26, 26, 46, 0.6);
+    border-radius: 8px;
+    padding: 15px;
+    margin-bottom: 10px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    transition: all 0.3s ease;
+}
+
+.pipeline-step.active {
+    border-color: var(--info-cyan);
+    background: rgba(26, 26, 46, 0.8);
+    box-shadow: 0 0 15px rgba(0, 212, 255, 0.3);
+}
+
+.pipeline-step.complete {
+    border-color: var(--success-green);
+}
+
+.pipeline-step.error {
+    border-color: var(--nasa-red);
+}
+
+.pipeline-image-container {
+    display: flex;
+    gap: 10px;
+    overflow-x: auto;
+    padding: 10px 0;
+}
+
+.pipeline-image {
+    width: 150px;
+    height: 150px;
+    border-radius: 8px;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    object-fit: cover;
+}
+
+/* Map Controls Styles */
+.map-controls {
+    margin: 10px;
+    background: rgba(26, 26, 46, 0.8);
+    border-radius: 8px;
+    padding: 10px;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+    border: 1px solid rgba(0, 212, 255, 0.3);
+    color: white;
+}
+
+.map-control-panel {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.map-control-title {
+    font-size: 14px;
+    font-weight: bold;
+    margin-bottom: 5px;
+    color: #00d4ff;
+}
+
+.map-control-buttons {
+    display: flex;
+    gap: 8px;
+    margin-top: 5px;
+}
+
+.map-control-buttons button {
+    background: linear-gradient(135deg, #0B3D91, #16213e);
+    border: 1px solid rgba(0, 212, 255, 0.3);
+    color: white;
+    padding: 5px 10px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 12px;
+    transition: all 0.3s ease;
+}
+-->
