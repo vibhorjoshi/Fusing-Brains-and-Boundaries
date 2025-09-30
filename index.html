@@ -1,0 +1,829 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GeoAI Research Platform - NASA-Level Building Footprint Detection</title>
+    <style>
+        :root {
+            --nasa-blue: #0B3D91;
+            --nasa-red: #FC3D21;
+            --space-black: #0a0a0a;
+            --deep-space: #1a1a2e;
+            --cosmic-blue: #16213e;
+            --success-green: #00ff88;
+            --warning-orange: #ff6b35;
+            --info-cyan: #00d4ff;
+            --star-white: #eee6ff;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, var(--space-black) 0%, var(--deep-space) 25%, var(--cosmic-blue) 100%);
+            color: var(--star-white);
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        /* Header Styles */
+        .header {
+            background: rgba(26, 26, 46, 0.9);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(0, 212, 255, 0.2);
+            border-radius: 15px;
+            padding: 20px;
+            margin-bottom: 30px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 2.5rem;
+            background: linear-gradient(135deg, var(--nasa-blue), var(--nasa-red));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 10px;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+
+        .header p {
+            color: var(--info-cyan);
+            font-size: 1.1rem;
+        }
+
+        /* Status Indicators */
+        .status-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: rgba(0, 0, 0, 0.5);
+            padding: 15px 25px;
+            border-radius: 10px;
+            margin-bottom: 30px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .status-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .status-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            animation: pulse 2s ease-in-out infinite;
+        }
+
+        .status-dot.online { background: var(--success-green); }
+        .status-dot.processing { background: var(--warning-orange); }
+        .status-dot.offline { background: var(--nasa-red); }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.6; }
+        }
+
+        /* Dashboard Grid */
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            gap: 25px;
+            margin-bottom: 30px;
+        }
+
+        .dashboard-card {
+            background: rgba(26, 26, 46, 0.6);
+            backdrop-filter: blur(15px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 15px;
+            padding: 25px;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .dashboard-card:hover {
+            border-color: rgba(0, 212, 255, 0.4);
+            transform: translateY(-5px);
+            box-shadow: 0 10px 30px rgba(0, 212, 255, 0.2);
+        }
+
+        .dashboard-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background: linear-gradient(90deg, var(--info-cyan), var(--success-green));
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .dashboard-card:hover::before {
+            opacity: 1;
+        }
+
+        .card-header {
+            display: flex;
+            justify-content: between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .card-title {
+            font-size: 1.3rem;
+            font-weight: 600;
+            color: var(--info-cyan);
+        }
+
+        .card-icon {
+            font-size: 1.5rem;
+            margin-right: 10px;
+        }
+
+        /* Metrics Display */
+        .metric {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+            padding: 10px;
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 8px;
+            border-left: 3px solid var(--success-green);
+        }
+
+        .metric-label {
+            font-size: 0.9rem;
+            color: rgba(255, 255, 255, 0.7);
+        }
+
+        .metric-value {
+            font-size: 1.1rem;
+            font-weight: bold;
+            font-family: 'Courier New', monospace;
+        }
+
+        .metric-value.success { color: var(--success-green); }
+        .metric-value.warning { color: var(--warning-orange); }
+        .metric-value.info { color: var(--info-cyan); }
+
+        /* Progress Bar */
+        .progress-bar {
+            width: 100%;
+            height: 8px;
+            background: rgba(0, 0, 0, 0.5);
+            border-radius: 4px;
+            overflow: hidden;
+            margin: 10px 0;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, var(--info-cyan), var(--success-green));
+            border-radius: 4px;
+            transition: width 0.6s ease;
+        }
+
+        /* Control Panel */
+        .control-panel {
+            background: rgba(26, 26, 46, 0.8);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 15px;
+            padding: 25px;
+            margin-top: 30px;
+        }
+
+        .control-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-top: 20px;
+        }
+
+        .btn {
+            background: linear-gradient(135deg, var(--nasa-blue), var(--cosmic-blue));
+            border: 1px solid rgba(0, 212, 255, 0.3);
+            color: white;
+            padding: 12px 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .btn:hover {
+            background: linear-gradient(135deg, var(--info-cyan), var(--nasa-blue));
+            border-color: var(--info-cyan);
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0, 212, 255, 0.3);
+        }
+
+        .btn:active {
+            transform: translateY(0);
+        }
+
+        .btn.danger {
+            background: linear-gradient(135deg, var(--nasa-red), var(--warning-orange));
+            border-color: var(--nasa-red);
+        }
+
+        .btn.success {
+            background: linear-gradient(135deg, var(--success-green), #00b894);
+            border-color: var(--success-green);
+        }
+
+        /* Log Display */
+        .log-display {
+            background: rgba(0, 0, 0, 0.7);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            padding: 15px;
+            height: 200px;
+            overflow-y: auto;
+            font-family: 'Courier New', monospace;
+            font-size: 0.85rem;
+            line-height: 1.4;
+        }
+
+        .log-entry {
+            margin-bottom: 5px;
+            padding: 3px 0;
+        }
+
+        .log-entry.info { color: var(--info-cyan); }
+        .log-entry.success { color: var(--success-green); }
+        .log-entry.warning { color: var(--warning-orange); }
+        .log-entry.error { color: var(--nasa-red); }
+
+        .log-timestamp {
+            color: rgba(255, 255, 255, 0.5);
+            font-size: 0.75rem;
+        }
+
+        /* Responsive Design */
+        @media (max-width: 768px) {
+            .status-bar {
+                flex-direction: column;
+                gap: 15px;
+            }
+
+            .dashboard-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .header h1 {
+                font-size: 2rem;
+            }
+
+            .control-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        /* Loading Animation */
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(255, 255, 255, 0.2);
+            border-radius: 50%;
+            border-top-color: var(--info-cyan);
+            animation: spin 1s ease-in-out infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        /* Hide/Show Elements */
+        .hidden { display: none; }
+        .fade-in { animation: fadeIn 0.5s ease-in; }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* API Status Indicators */
+        .api-status {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 0.9rem;
+        }
+
+        .api-key-input {
+            background: rgba(0, 0, 0, 0.5);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 5px;
+            padding: 8px 12px;
+            color: white;
+            width: 100%;
+            margin: 5px 0;
+            font-family: 'Courier New', monospace;
+        }
+
+        .api-key-input:focus {
+            outline: none;
+            border-color: var(--info-cyan);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Header Section -->
+        <div class="header">
+            <h1>🛰️ GeoAI Research Platform</h1>
+            <p>NASA-Level Building Footprint Detection & Satellite Image Analysis</p>
+        </div>
+
+        <!-- Status Bar -->
+        <div class="status-bar">
+            <div class="status-item">
+                <div class="status-dot offline" id="backend-status"></div>
+                <span>Backend Server</span>
+                <span id="backend-text">Connecting...</span>
+            </div>
+            <div class="status-item">
+                <div class="status-dot offline" id="api-status"></div>
+                <span>API Authentication</span>
+                <span id="api-text">Not Authenticated</span>
+            </div>
+            <div class="status-item">
+                <div class="status-dot offline" id="training-status"></div>
+                <span>Training Engine</span>
+                <span id="training-text">Idle</span>
+            </div>
+            <div class="status-item">
+                <span>🕒 <span id="current-time"></span></span>
+            </div>
+        </div>
+
+        <!-- Dashboard Grid -->
+        <div class="dashboard-grid">
+            <!-- System Metrics Card -->
+            <div class="dashboard-card">
+                <div class="card-header">
+                    <h3 class="card-title"><span class="card-icon">📊</span>System Metrics</h3>
+                </div>
+                <div class="metric">
+                    <span class="metric-label">Detection Accuracy (IoU)</span>
+                    <span class="metric-value success" id="accuracy-value">--</span>
+                </div>
+                <div class="metric">
+                    <span class="metric-label">Processing Speed</span>
+                    <span class="metric-value info" id="speed-value">--</span>
+                </div>
+                <div class="metric">
+                    <span class="metric-label">Training Progress</span>
+                    <span class="metric-value warning" id="progress-value">--</span>
+                </div>
+                <div class="progress-bar">
+                    <div class="progress-fill" id="progress-fill" style="width: 0%"></div>
+                </div>
+                <div class="metric">
+                    <span class="metric-label">Samples Processed</span>
+                    <span class="metric-value info" id="samples-value">--</span>
+                </div>
+            </div>
+
+            <!-- Training Status Card -->
+            <div class="dashboard-card">
+                <div class="card-header">
+                    <h3 class="card-title"><span class="card-icon">🎯</span>Training Status</h3>
+                </div>
+                <div class="metric">
+                    <span class="metric-label">Current Region</span>
+                    <span class="metric-value info" id="region-value">--</span>
+                </div>
+                <div class="metric">
+                    <span class="metric-label">Current Epoch</span>
+                    <span class="metric-value warning" id="epoch-value">--</span>
+                </div>
+                <div class="metric">
+                    <span class="metric-label">Loss Value</span>
+                    <span class="metric-value success" id="loss-value">--</span>
+                </div>
+                <div class="metric">
+                    <span class="metric-label">Improvement</span>
+                    <span class="metric-value success" id="improvement-value">--</span>
+                </div>
+            </div>
+
+            <!-- API Testing Card -->
+            <div class="dashboard-card">
+                <div class="card-header">
+                    <h3 class="card-title"><span class="card-icon">🔧</span>API Testing</h3>
+                </div>
+                <input type="text" id="api-key-input" class="api-key-input" placeholder="Enter API Key (e.g., GEO_SAT_PROC_2024_001)">
+                
+                <div class="control-grid">
+                    <button class="btn" onclick="testMapProcessing()">Test Map Processing</button>
+                    <button class="btn" onclick="testAdaptiveFusion()">Test Adaptive Fusion</button>
+                    <button class="btn" onclick="testVectorConversion()">Test Vector Conversion</button>
+                    <button class="btn" onclick="testVisualization()">Test Visualization</button>
+                </div>
+                
+                <div class="api-status" style="margin-top: 15px;">
+                    <span>Last API Call:</span>
+                    <span id="last-api-call">None</span>
+                </div>
+            </div>
+
+            <!-- Live Analytics Card -->
+            <div class="dashboard-card">
+                <div class="card-header">
+                    <h3 class="card-title"><span class="card-icon">📈</span>Live Analytics</h3>
+                </div>
+                <div class="metric">
+                    <span class="metric-label">Buildings Detected</span>
+                    <span class="metric-value success" id="buildings-detected">--</span>
+                </div>
+                <div class="metric">
+                    <span class="metric-label">Processing Jobs</span>
+                    <span class="metric-value info" id="processing-jobs">--</span>
+                </div>
+                <div class="metric">
+                    <span class="metric-label">Queue Status</span>
+                    <span class="metric-value warning" id="queue-status">--</span>
+                </div>
+                <div class="metric">
+                    <span class="metric-label">Uptime</span>
+                    <span class="metric-value info" id="uptime-value">--</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Control Panel -->
+        <div class="control-panel">
+            <h3 class="card-title">🎛️ Mission Control</h3>
+            <div class="control-grid">
+                <button class="btn success" onclick="refreshData()">🔄 Refresh All Data</button>
+                <button class="btn" onclick="getTrainingStatus()">📊 Get Training Status</button>
+                <button class="btn" onclick="getHealthStatus()">🏥 System Health</button>
+                <button class="btn" onclick="openAnalytics()">📈 Open Analytics</button>
+                <button class="btn" onclick="openLiveDashboard()">🚀 Live Dashboard</button>
+                <button class="btn danger" onclick="clearLogs()">🗑️ Clear Logs</button>
+            </div>
+        </div>
+
+        <!-- Activity Log -->
+        <div class="control-panel">
+            <h3 class="card-title">📋 Activity Log</h3>
+            <div class="log-display" id="activity-log">
+                <div class="log-entry info">
+                    <span class="log-timestamp">[System Ready]</span> GeoAI Dashboard initialized
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Configuration
+        const API_BASE_URL = 'http://localhost:8002';
+        const UPDATE_INTERVAL = 5000; // 5 seconds
+        
+        // API Keys for different components
+        const API_KEYS = {
+            'MapProcessing': 'GEO_SAT_PROC_2024_001',
+            'AdaptiveFusion': 'ADAPT_FUSION_AI_2024_002',
+            'VectorConversion': 'VECTOR_CONV_SYS_2024_003',
+            'GraphVisualization': 'GRAPH_VIZ_ENGINE_2024_004',
+            'MLModelAccess': 'ML_MODEL_ACCESS_2024_005',
+            'SystemAdmin': 'ADMIN_CONTROL_2024_006'
+        };
+
+        // Global state
+        let isConnected = false;
+        let startTime = Date.now();
+        let refreshInterval;
+
+        // Initialize dashboard
+        document.addEventListener('DOMContentLoaded', function() {
+            updateTime();
+            setInterval(updateTime, 1000);
+            
+            // Start auto-refresh
+            refreshInterval = setInterval(refreshData, UPDATE_INTERVAL);
+            
+            // Initial data load
+            setTimeout(refreshData, 1000);
+            
+            logActivity('info', 'Dashboard initialization complete');
+        });
+
+        // Update current time
+        function updateTime() {
+            const now = new Date();
+            document.getElementById('current-time').textContent = now.toLocaleTimeString();
+        }
+
+        // Log activity
+        function logActivity(type, message) {
+            const logDisplay = document.getElementById('activity-log');
+            const timestamp = new Date().toLocaleTimeString();
+            const entry = document.createElement('div');
+            entry.className = `log-entry ${type}`;
+            entry.innerHTML = `<span class="log-timestamp">[${timestamp}]</span> ${message}`;
+            
+            logDisplay.appendChild(entry);
+            logDisplay.scrollTop = logDisplay.scrollHeight;
+            
+            // Keep only last 50 entries
+            const entries = logDisplay.querySelectorAll('.log-entry');
+            if (entries.length > 50) {
+                logDisplay.removeChild(entries[0]);
+            }
+        }
+
+        // Update status indicators
+        function updateStatusIndicator(elementId, status, textId, text) {
+            const element = document.getElementById(elementId);
+            const textElement = document.getElementById(textId);
+            
+            element.className = `status-dot ${status}`;
+            if (textElement) textElement.textContent = text;
+        }
+
+        // Make API request with authentication
+        async function makeAPIRequest(endpoint, method = 'GET', data = null, apiKey = null) {
+            const headers = {
+                'Content-Type': 'application/json',
+            };
+            
+            if (apiKey) {
+                headers['X-API-Key'] = apiKey;
+            }
+            
+            const config = {
+                method,
+                headers,
+            };
+            
+            if (data && (method === 'POST' || method === 'PUT')) {
+                config.body = JSON.stringify(data);
+            }
+            
+            try {
+                const response = await fetch(`${API_BASE_URL}${endpoint}`, config);
+                const responseData = await response.json();
+                
+                if (!response.ok) {
+                    throw new Error(`API Error: ${response.status} - ${responseData.detail || 'Unknown error'}`);
+                }
+                
+                return responseData;
+            } catch (error) {
+                logActivity('error', `API request failed: ${error.message}`);
+                throw error;
+            }
+        }
+
+        // Check backend connectivity
+        async function checkBackendStatus() {
+            try {
+                const response = await makeAPIRequest('/health');
+                updateStatusIndicator('backend-status', 'online', 'backend-text', 'Connected');
+                isConnected = true;
+                return true;
+            } catch (error) {
+                updateStatusIndicator('backend-status', 'offline', 'backend-text', 'Disconnected');
+                isConnected = false;
+                return false;
+            }
+        }
+
+        // Get training status
+        async function getTrainingStatus() {
+            try {
+                const response = await makeAPIRequest('/api/v1/training/status');
+                
+                // Update training metrics
+                document.getElementById('accuracy-value').textContent = `${(response.current_accuracy * 100).toFixed(2)}%`;
+                document.getElementById('progress-value').textContent = `${response.progress.toFixed(1)}%`;
+                document.getElementById('samples-value').textContent = response.samples_processed.toLocaleString();
+                document.getElementById('region-value').textContent = response.region.toUpperCase();
+                document.getElementById('epoch-value').textContent = `${response.current_epoch}/${response.total_epochs}`;
+                document.getElementById('loss-value').textContent = response.current_loss.toFixed(4);
+                document.getElementById('improvement-value').textContent = `+${response.improvement.toFixed(1)}%`;
+                
+                // Update progress bar
+                document.getElementById('progress-fill').style.width = `${response.progress}%`;
+                
+                // Update training status
+                const trainingText = response.is_training ? 'Training Active' : 'Training Complete';
+                const trainingStatus = response.is_training ? 'processing' : 'online';
+                updateStatusIndicator('training-status', trainingStatus, 'training-text', trainingText);
+                
+                logActivity('success', `Training status updated - ${response.region} region at ${response.progress.toFixed(1)}% completion`);
+                
+                return response;
+            } catch (error) {
+                updateStatusIndicator('training-status', 'offline', 'training-text', 'Error');
+                logActivity('error', `Failed to get training status: ${error.message}`);
+                return null;
+            }
+        }
+
+        // Get health status
+        async function getHealthStatus() {
+            try {
+                const response = await makeAPIRequest('/health');
+                
+                // Update uptime
+                const uptimeSeconds = Math.floor((Date.now() - startTime) / 1000);
+                const hours = Math.floor(uptimeSeconds / 3600);
+                const minutes = Math.floor((uptimeSeconds % 3600) / 60);
+                document.getElementById('uptime-value').textContent = `${hours}h ${minutes}m`;
+                
+                // Update other metrics from health data
+                document.getElementById('processing-jobs').textContent = response.active_jobs || '0';
+                document.getElementById('queue-status').textContent = response.queue_status || 'Empty';
+                document.getElementById('buildings-detected').textContent = response.buildings_detected || '0';
+                
+                logActivity('success', 'Health status updated');
+                return response;
+            } catch (error) {
+                logActivity('error', `Failed to get health status: ${error.message}`);
+                return null;
+            }
+        }
+
+        // Refresh all data
+        async function refreshData() {
+            logActivity('info', 'Refreshing all dashboard data...');
+            
+            const backendOk = await checkBackendStatus();
+            
+            if (backendOk) {
+                await Promise.all([
+                    getTrainingStatus(),
+                    getHealthStatus()
+                ]);
+                
+                logActivity('success', 'Dashboard data refresh complete');
+            } else {
+                logActivity('warning', 'Backend disconnected - skipping data refresh');
+            }
+        }
+
+        // API Testing Functions
+        function getAPIKey() {
+            const input = document.getElementById('api-key-input');
+            return input.value.trim() || API_KEYS.MapProcessing; // Default to map processing key
+        }
+
+        async function testMapProcessing() {
+            const apiKey = getAPIKey();
+            document.getElementById('last-api-call').textContent = 'Map Processing...';
+            
+            try {
+                const response = await makeAPIRequest('/api/v1/map/process', 'POST', {
+                    image_url: 'https://example.com/satellite.jpg',
+                    model_type: 'adaptive_fusion',
+                    apply_regularization: true,
+                    normalize: true
+                }, apiKey);
+                
+                document.getElementById('last-api-call').textContent = `✅ Map Processing (Job: ${response.job_id})`;
+                logActivity('success', `Map processing started - Job ID: ${response.job_id}, Buildings detected: ${response.buildings_detected}`);
+                updateStatusIndicator('api-status', 'online', 'api-text', 'Authenticated');
+                
+            } catch (error) {
+                document.getElementById('last-api-call').textContent = '❌ Map Processing Failed';
+                updateStatusIndicator('api-status', 'offline', 'api-text', 'Authentication Failed');
+            }
+        }
+
+        async function testAdaptiveFusion() {
+            const apiKey = getAPIKey();
+            document.getElementById('last-api-call').textContent = 'Adaptive Fusion...';
+            
+            try {
+                const response = await makeAPIRequest('/api/v1/fusion/process', 'POST', {
+                    mode: 'live_adaptive',
+                    normalize: true,
+                    fusion_algorithm: 'deep_attention',
+                    real_time: false
+                }, apiKey);
+                
+                document.getElementById('last-api-call').textContent = `✅ Adaptive Fusion (${response.improvement.toFixed(1)}% improvement)`;
+                logActivity('success', `Adaptive fusion complete - IoU improvement: ${response.improvement.toFixed(1)}%`);
+                updateStatusIndicator('api-status', 'online', 'api-text', 'Authenticated');
+                
+            } catch (error) {
+                document.getElementById('last-api-call').textContent = '❌ Adaptive Fusion Failed';
+                updateStatusIndicator('api-status', 'offline', 'api-text', 'Authentication Failed');
+            }
+        }
+
+        async function testVectorConversion() {
+            const apiKey = getAPIKey();
+            document.getElementById('last-api-call').textContent = 'Vector Conversion...';
+            
+            try {
+                const response = await makeAPIRequest('/api/v1/vector/convert', 'POST', {
+                    simplify_tolerance: 0.5,
+                    smoothing_factor: 0.3,
+                    corner_detection: true,
+                    geometric_normalization: true,
+                    output_format: 'geojson',
+                    precision: 'high'
+                }, apiKey);
+                
+                document.getElementById('last-api-call').textContent = `✅ Vector Conversion (${response.vectors_generated} vectors)`;
+                logActivity('success', `Vector conversion complete - ${response.vectors_generated} vectors generated`);
+                updateStatusIndicator('api-status', 'online', 'api-text', 'Authenticated');
+                
+            } catch (error) {
+                document.getElementById('last-api-call').textContent = '❌ Vector Conversion Failed';
+                updateStatusIndicator('api-status', 'offline', 'api-text', 'Authentication Failed');
+            }
+        }
+
+        async function testVisualization() {
+            const apiKey = getAPIKey();
+            document.getElementById('last-api-call').textContent = 'Visualization...';
+            
+            try {
+                const response = await makeAPIRequest('/api/v1/visualization/network', 'GET', null, apiKey);
+                
+                document.getElementById('last-api-call').textContent = `✅ Visualization (${response.nodes} nodes)`;
+                logActivity('success', `Visualization data retrieved - ${response.nodes} nodes, ${response.edges} edges`);
+                updateStatusIndicator('api-status', 'online', 'api-text', 'Authenticated');
+                
+            } catch (error) {
+                document.getElementById('last-api-call').textContent = '❌ Visualization Failed';
+                updateStatusIndicator('api-status', 'offline', 'api-text', 'Authentication Failed');
+            }
+        }
+
+        // Navigation functions
+        function openAnalytics() {
+            window.open(`${API_BASE_URL}/analytics`, '_blank');
+            logActivity('info', 'Opened analytics dashboard in new tab');
+        }
+
+        function openLiveDashboard() {
+            window.open(`${API_BASE_URL}/live`, '_blank');
+            logActivity('info', 'Opened live dashboard in new tab');
+        }
+
+        function clearLogs() {
+            const logDisplay = document.getElementById('activity-log');
+            logDisplay.innerHTML = '<div class="log-entry info"><span class="log-timestamp">[System]</span> Logs cleared</div>';
+            logActivity('info', 'Activity logs cleared');
+        }
+
+        // Keyboard shortcuts
+        document.addEventListener('keydown', function(e) {
+            if (e.ctrlKey) {
+                switch(e.key) {
+                    case 'r':
+                        e.preventDefault();
+                        refreshData();
+                        break;
+                    case 'l':
+                        e.preventDefault();
+                        clearLogs();
+                        break;
+                }
+            }
+        });
+
+        // Handle window visibility changes
+        document.addEventListener('visibilitychange', function() {
+            if (document.hidden) {
+                // Pause auto-refresh when tab is hidden
+                if (refreshInterval) {
+                    clearInterval(refreshInterval);
+                }
+            } else {
+                // Resume auto-refresh when tab is visible
+                refreshInterval = setInterval(refreshData, UPDATE_INTERVAL);
+                refreshData(); // Immediate refresh
+            }
+        });
+    </script>
+</body>
+</html>
