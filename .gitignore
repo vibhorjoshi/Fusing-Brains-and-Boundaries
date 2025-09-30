@@ -49,6 +49,14 @@ venv.bak/
 *.swo
 *~
 
+# Node.js
+node_modules/
+frontend/node_modules/
+.pnp
+.pnp.js
+.next/
+*.tsbuildinfo
+
 # OS
 .DS_Store
 .DS_Store?

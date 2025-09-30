@@ -197,6 +197,131 @@ async def get_capabilities():
     
     return capabilities
 
+# Training and Analytics Endpoints
+@app.get("/api/v1/training/status")
+async def get_training_status():
+    """Get current training status"""
+    import random
+    import time
+    
+    # Simulate training metrics
+    training_status = {
+        "status": "training" if random.random() > 0.3 else "completed",
+        "epoch": random.randint(1, 100),
+        "total_epochs": 100,
+        "loss": round(random.uniform(0.1, 2.5), 4),
+        "accuracy": round(random.uniform(0.65, 0.95), 4),
+        "iou_score": round(random.uniform(0.60, 0.85), 4),
+        "learning_rate": 0.001,
+        "batch_size": 32,
+        "estimated_time_remaining": f"{random.randint(10, 120)} minutes",
+        "last_updated": time.time(),
+        "metrics": {
+            "train_loss": round(random.uniform(0.1, 2.0), 4),
+            "val_loss": round(random.uniform(0.2, 2.2), 4),
+            "precision": round(random.uniform(0.70, 0.90), 4),
+            "recall": round(random.uniform(0.65, 0.88), 4),
+            "f1_score": round(random.uniform(0.68, 0.89), 4)
+        }
+    }
+    
+    return training_status
+
+@app.get("/api/v1/analytics/overview")
+async def get_analytics_overview():
+    """Get analytics overview dashboard data"""
+    import random
+    
+    analytics = {
+        "total_images_processed": random.randint(10000, 50000),
+        "total_buildings_detected": random.randint(500000, 2000000),
+        "avg_processing_time": round(random.uniform(15.0, 45.0), 2),
+        "success_rate": round(random.uniform(0.85, 0.98), 4),
+        "states_covered": 8,
+        "accuracy_metrics": {
+            "overall_iou": round(random.uniform(0.65, 0.85), 4),
+            "precision": round(random.uniform(0.70, 0.90), 4),
+            "recall": round(random.uniform(0.68, 0.88), 4)
+        },
+        "performance_by_state": [
+            {"state": "Alabama", "iou": 0.742, "buildings": 156421, "processing_time": 26.4},
+            {"state": "Georgia", "iou": 0.738, "buildings": 189234, "processing_time": 32.1},
+            {"state": "Florida", "iou": 0.721, "buildings": 234567, "processing_time": 38.7},
+            {"state": "Tennessee", "iou": 0.756, "buildings": 98234, "processing_time": 22.3},
+            {"state": "Mississippi", "iou": 0.734, "buildings": 87654, "processing_time": 19.8}
+        ]
+    }
+    
+    return analytics
+
+@app.get("/api/v1/fusion/process")
+async def fusion_process():
+    """Simulate fusion processing status"""
+    import random
+    
+    status = {
+        "status": "processing",
+        "progress": random.randint(10, 90),
+        "current_step": random.choice([
+            "RT Regularization",
+            "RR Regularization", 
+            "FER Regularization",
+            "RL Adaptive Fusion",
+            "Final Processing"
+        ]),
+        "estimated_completion": f"{random.randint(5, 30)} minutes"
+    }
+    
+    return status
+
+@app.get("/api/v1/map/process")
+async def map_process():
+    """Simulate map processing status"""
+    import random
+    
+    status = {
+        "status": "ready",
+        "tiles_processed": random.randint(100, 1000),
+        "total_tiles": 1000,
+        "resolution": "1m",
+        "coverage_area_km2": random.randint(1000, 5000)
+    }
+    
+    return status
+
+@app.get("/api/v1/vector/convert")
+async def vector_convert():
+    """Simulate vector conversion status"""
+    import random
+    
+    status = {
+        "status": "completed",
+        "vectors_generated": random.randint(5000, 25000),
+        "format": "GeoJSON",
+        "file_size_mb": round(random.uniform(10.5, 150.8), 2)
+    }
+    
+    return status
+
+@app.get("/api/v1/building/detect")
+async def building_detect():
+    """Simulate building detection results"""
+    import random
+    
+    results = {
+        "buildings_detected": random.randint(1000, 8000),
+        "confidence_score": round(random.uniform(0.75, 0.95), 4),
+        "processing_time_seconds": round(random.uniform(15.2, 45.8), 2),
+        "image_resolution": "1024x1024",
+        "detection_model": "MaskRCNN-ResNet50"
+    }
+    
+    return results
+
+# Include Alabama city analytics router
+from alabama_city_analytics import router as alabama_router
+app.include_router(alabama_router)
+
 @app.post("/api/v1/process-image")
 async def process_single_image(
     background_tasks: BackgroundTasks,
