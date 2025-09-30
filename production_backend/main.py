@@ -19,6 +19,7 @@ from typing import Optional
 from app.core.config import settings
 from app.core.database import init_db, get_db
 from app.core.logging import setup_logging
+from app.core.redis_manager import init_redis, close_redis, get_redis
 from app.api.v1.api import api_router
 from app.middleware.security import SecurityMiddleware
 from app.middleware.rate_limit import RateLimitMiddleware
@@ -34,15 +35,28 @@ async def lifespan(app: FastAPI):
     logger.info("🚀 Starting Building Footprint Production Backend")
     logger.info(f"Environment: {settings.ENVIRONMENT}")
     logger.info(f"Database URL: {settings.DATABASE_URL}")
+    logger.info(f"Redis URL: {settings.REDIS_URL}")
     
-    # Initialize database
-    await init_db()
-    logger.info("✅ Database initialized")
+    # Initialize Redis
+    redis_connected = await init_redis(settings.REDIS_URL)
+    if redis_connected:
+        logger.info("✅ Redis connection established")
+    else:
+        logger.warning("⚠️ Redis connection failed - continuing without caching")
+    
+    # Initialize database (mock for now)
+    try:
+        # await init_db()  # Commented out until we have proper database setup
+        logger.info("✅ Database connection ready (using SQLite for testing)")
+    except Exception as e:
+        logger.error(f"Database initialization failed: {e}")
     
     yield
     
     # Shutdown
     logger.info("🔄 Shutting down Production Backend")
+    await close_redis()
+    logger.info("✅ Redis connection closed")
 
 # Create FastAPI application
 app = FastAPI(

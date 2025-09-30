@@ -207,7 +207,8 @@ class ExtendedMaskRCNNTrainer:
                         losses = sum(loss for loss in loss_dict.values())
                         
                     # Backward and optimize with gradient scaling
-                    self.if optimizer is not None: optimizer.zero_grad()
+                    if optimizer is not None: 
+                        optimizer.zero_grad()
                     self.scaler.scale(losses).backward()
                     self.scaler.step(self.optimizer)
                     self.scaler.update()
@@ -217,7 +218,8 @@ class ExtendedMaskRCNNTrainer:
                     losses = sum(loss for loss in loss_dict.values())
                     
                     # Backward and optimize
-                    self.if optimizer is not None: optimizer.zero_grad()
+                    if optimizer is not None:
+                        optimizer.zero_grad()
                     losses.backward()
                     self.optimizer.step()
                 

@@ -1,0 +1,970 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GeoAI Analytics Dashboard - Real-time Monitoring</title>
+    
+    <!-- External Libraries -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
+    <script src="https://unpkg.com/axios/dist/axios.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.8.5/d3.min.js"></script>
+    
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #0c0c0c 0%, #1a1a2e 50%, #16213e 100%);
+            color: #ffffff;
+            overflow-x: hidden;
+            min-height: 100vh;
+        }
+
+        .dashboard-container {
+            display: grid;
+            grid-template-columns: 300px 1fr;
+            grid-template-rows: 80px 1fr;
+            height: 100vh;
+            gap: 15px;
+            padding: 15px;
+        }
+
+        .header {
+            grid-column: 1 / -1;
+            background: rgba(0, 20, 40, 0.8);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(64, 255, 218, 0.2);
+            border-radius: 12px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0 25px;
+        }
+
+        .logo {
+            font-size: 1.8rem;
+            font-weight: 800;
+            background: linear-gradient(135deg, #64ffda 0%, #00d4ff 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .header-stats {
+            display: flex;
+            gap: 30px;
+            align-items: center;
+        }
+
+        .header-stat {
+            text-align: center;
+        }
+
+        .stat-value {
+            font-size: 1.5rem;
+            font-weight: 800;
+            color: #64ffda;
+            line-height: 1;
+        }
+
+        .stat-label {
+            font-size: 0.8rem;
+            color: rgba(255, 255, 255, 0.7);
+        }
+
+        .sidebar {
+            background: rgba(0, 20, 40, 0.6);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(64, 255, 218, 0.2);
+            border-radius: 12px;
+            padding: 20px;
+            overflow-y: auto;
+        }
+
+        .main-dashboard {
+            display: grid;
+            grid-template-columns: 2fr 1fr;
+            grid-template-rows: repeat(3, 1fr);
+            gap: 15px;
+        }
+
+        .chart-panel {
+            background: rgba(0, 20, 40, 0.6);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(64, 255, 218, 0.2);
+            border-radius: 12px;
+            padding: 20px;
+            position: relative;
+        }
+
+        .chart-panel.large {
+            grid-row: span 2;
+        }
+
+        .panel-title {
+            font-size: 1.2rem;
+            font-weight: 600;
+            margin-bottom: 15px;
+            color: #64ffda;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .metric-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .metric-card {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(64, 255, 218, 0.2);
+            border-radius: 8px;
+            padding: 15px;
+            text-align: center;
+            transition: all 0.3s ease;
+        }
+
+        .metric-card:hover {
+            border-color: #64ffda;
+            transform: translateY(-2px);
+        }
+
+        .metric-number {
+            font-size: 1.8rem;
+            font-weight: 800;
+            color: #64ffda;
+            margin-bottom: 5px;
+        }
+
+        .metric-text {
+            font-size: 0.9rem;
+            color: rgba(255, 255, 255, 0.8);
+        }
+
+        .activity-feed {
+            max-height: 300px;
+            overflow-y: auto;
+        }
+
+        .activity-item {
+            padding: 12px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(64, 255, 218, 0.1);
+            border-radius: 8px;
+            margin-bottom: 8px;
+            transition: all 0.3s ease;
+        }
+
+        .activity-item:hover {
+            background: rgba(64, 255, 218, 0.1);
+        }
+
+        .activity-time {
+            font-size: 0.8rem;
+            color: #64ffda;
+            font-weight: 600;
+        }
+
+        .activity-text {
+            font-size: 0.9rem;
+            color: rgba(255, 255, 255, 0.9);
+            margin-top: 5px;
+        }
+
+        .controls-section {
+            margin-bottom: 25px;
+        }
+
+        .control-group {
+            margin-bottom: 15px;
+        }
+
+        .control-label {
+            display: block;
+            margin-bottom: 8px;
+            color: #64ffda;
+            font-weight: 600;
+        }
+
+        .control-select {
+            width: 100%;
+            padding: 8px 12px;
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid rgba(64, 255, 218, 0.3);
+            border-radius: 6px;
+            color: white;
+            font-size: 0.9rem;
+        }
+
+        .control-select:focus {
+            outline: none;
+            border-color: #64ffda;
+        }
+
+        .status-indicator {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 10px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 6px;
+            margin-bottom: 8px;
+        }
+
+        .status-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: #10b981;
+            animation: pulse 2s infinite;
+        }
+
+        .status-offline {
+            background: #ef4444;
+        }
+
+        .status-warning {
+            background: #f59e0b;
+        }
+
+        .chart-container {
+            height: 250px;
+            position: relative;
+        }
+
+        .chart-container.large {
+            height: 400px;
+        }
+
+        .heatmap-container {
+            height: 200px;
+            overflow: hidden;
+        }
+
+        .processing-pipeline {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin: 15px 0;
+        }
+
+        .pipeline-stage {
+            text-align: center;
+            flex: 1;
+            position: relative;
+        }
+
+        .pipeline-stage:not(:last-child)::after {
+            content: '→';
+            position: absolute;
+            right: -20px;
+            color: #64ffda;
+            font-size: 1.2rem;
+        }
+
+        .stage-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #64ffda, #00d4ff);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 8px;
+            font-size: 1.2rem;
+        }
+
+        .stage-name {
+            font-size: 0.8rem;
+            color: rgba(255, 255, 255, 0.8);
+        }
+
+        .stage-time {
+            font-size: 0.7rem;
+            color: #64ffda;
+            font-weight: 600;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .fade-in {
+            animation: fadeIn 0.5s ease-out;
+        }
+
+        .tooltip {
+            position: absolute;
+            background: rgba(0, 0, 0, 0.9);
+            color: white;
+            padding: 8px 12px;
+            border-radius: 6px;
+            font-size: 0.8rem;
+            pointer-events: none;
+            z-index: 1000;
+            backdrop-filter: blur(10px);
+        }
+
+        .alert-badge {
+            background: #ef4444;
+            color: white;
+            padding: 2px 6px;
+            border-radius: 10px;
+            font-size: 0.7rem;
+            font-weight: 600;
+        }
+
+        .performance-gauge {
+            width: 100px;
+            height: 100px;
+            margin: 0 auto;
+            position: relative;
+        }
+
+        .scrollbar {
+            scrollbar-width: thin;
+            scrollbar-color: #64ffda rgba(255, 255, 255, 0.1);
+        }
+
+        .scrollbar::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .scrollbar::-webkit-scrollbar-track {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 3px;
+        }
+
+        .scrollbar::-webkit-scrollbar-thumb {
+            background: #64ffda;
+            border-radius: 3px;
+        }
+    </style>
+</head>
+<body>
+    <div class="dashboard-container">
+        <!-- Header -->
+        <header class="header">
+            <div class="logo">📊 GeoAI Analytics Dashboard</div>
+            <div class="header-stats">
+                <div class="header-stat">
+                    <div class="stat-value" id="live-buildings">0</div>
+                    <div class="stat-label">Buildings Detected</div>
+                </div>
+                <div class="header-stat">
+                    <div class="stat-value" id="live-accuracy">94.2%</div>
+                    <div class="stat-label">Accuracy Rate</div>
+                </div>
+                <div class="header-stat">
+                    <div class="stat-value" id="live-throughput">0.0</div>
+                    <div class="stat-label">Images/sec</div>
+                </div>
+                <div class="header-stat">
+                    <div class="stat-value" id="live-uptime">00:00:00</div>
+                    <div class="stat-label">System Uptime</div>
+                </div>
+            </div>
+        </header>
+
+        <!-- Sidebar Controls -->
+        <aside class="sidebar scrollbar">
+            <div class="controls-section">
+                <h3 style="color: #64ffda; margin-bottom: 15px;">🎛️ Dashboard Controls</h3>
+                
+                <div class="control-group">
+                    <label class="control-label">Time Range</label>
+                    <select class="control-select" id="time-range">
+                        <option value="1h">Last Hour</option>
+                        <option value="6h">Last 6 Hours</option>
+                        <option value="24h" selected>Last 24 Hours</option>
+                        <option value="7d">Last 7 Days</option>
+                    </select>
+                </div>
+                
+                <div class="control-group">
+                    <label class="control-label">Model Filter</label>
+                    <select class="control-select" id="model-filter">
+                        <option value="all" selected>All Models</option>
+                        <option value="mask_rcnn">Mask R-CNN</option>
+                        <option value="adaptive_fusion">Adaptive Fusion</option>
+                        <option value="hybrid">Hybrid Model</option>
+                    </select>
+                </div>
+                
+                <div class="control-group">
+                    <label class="control-label">Region Filter</label>
+                    <select class="control-select" id="region-filter">
+                        <option value="global" selected>Global</option>
+                        <option value="north-america">North America</option>
+                        <option value="europe">Europe</option>
+                        <option value="asia">Asia Pacific</option>
+                        <option value="africa">Africa</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- System Status -->
+            <div class="controls-section">
+                <h3 style="color: #64ffda; margin-bottom: 15px;">🖥️ System Status</h3>
+                
+                <div class="status-indicator">
+                    <div class="status-dot" id="ml-engine-status"></div>
+                    <span>ML Engine</span>
+                </div>
+                
+                <div class="status-indicator">
+                    <div class="status-dot" id="database-status"></div>
+                    <span>Database</span>
+                </div>
+                
+                <div class="status-indicator">
+                    <div class="status-dot" id="api-status"></div>
+                    <span>API Server</span>
+                </div>
+                
+                <div class="status-indicator">
+                    <div class="status-dot" id="websocket-status"></div>
+                    <span>Live Stream</span>
+                </div>
+            </div>
+
+            <!-- Quick Metrics -->
+            <div class="controls-section">
+                <h3 style="color: #64ffda; margin-bottom: 15px;">⚡ Quick Metrics</h3>
+                
+                <div class="metric-grid">
+                    <div class="metric-card">
+                        <div class="metric-number" id="queue-size">0</div>
+                        <div class="metric-text">Queue Size</div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-number" id="active-workers">3</div>
+                        <div class="metric-text">Active Workers</div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-number" id="memory-usage">45%</div>
+                        <div class="metric-text">Memory Usage</div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-number" id="cpu-usage">32%</div>
+                        <div class="metric-text">CPU Usage</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Activity Feed -->
+            <div class="controls-section">
+                <h3 style="color: #64ffda; margin-bottom: 15px;">📝 Recent Activity</h3>
+                
+                <div class="activity-feed scrollbar" id="activity-feed">
+                    <!-- Activity items will be populated here -->
+                </div>
+            </div>
+        </aside>
+
+        <!-- Main Dashboard -->
+        <main class="main-dashboard">
+            <!-- Performance Chart -->
+            <div class="chart-panel large">
+                <div class="panel-title">
+                    <span>📈 Performance Metrics</span>
+                    <select class="control-select" style="width: 150px;" id="performance-metric">
+                        <option value="throughput">Throughput</option>
+                        <option value="accuracy">Accuracy</option>
+                        <option value="latency">Latency</option>
+                        <option value="success-rate">Success Rate</option>
+                    </select>
+                </div>
+                <div class="chart-container large">
+                    <canvas id="performance-chart"></canvas>
+                </div>
+            </div>
+
+            <!-- Model Comparison -->
+            <div class="chart-panel">
+                <div class="panel-title">🏆 Model Comparison</div>
+                <div class="chart-container">
+                    <canvas id="model-comparison-chart"></canvas>
+                </div>
+            </div>
+
+            <!-- Processing Pipeline -->
+            <div class="chart-panel">
+                <div class="panel-title">⚙️ Processing Pipeline</div>
+                <div class="processing-pipeline">
+                    <div class="pipeline-stage">
+                        <div class="stage-icon">📥</div>
+                        <div class="stage-name">Input</div>
+                        <div class="stage-time">0.1s</div>
+                    </div>
+                    <div class="pipeline-stage">
+                        <div class="stage-icon">🔄</div>
+                        <div class="stage-name">Preprocessing</div>
+                        <div class="stage-time">0.3s</div>
+                    </div>
+                    <div class="pipeline-stage">
+                        <div class="stage-icon">🧠</div>
+                        <div class="stage-name">ML Inference</div>
+                        <div class="stage-time">1.2s</div>
+                    </div>
+                    <div class="pipeline-stage">
+                        <div class="stage-icon">🏢</div>
+                        <div class="stage-name">Detection</div>
+                        <div class="stage-time">0.4s</div>
+                    </div>
+                    <div class="pipeline-stage">
+                        <div class="stage-icon">📤</div>
+                        <div class="stage-name">Output</div>
+                        <div class="stage-time">0.1s</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Regional Heatmap -->
+            <div class="chart-panel">
+                <div class="panel-title">🗺️ Regional Activity</div>
+                <div class="chart-container">
+                    <canvas id="regional-chart"></canvas>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        // Global variables
+        let performanceChart, modelComparisonChart, regionalChart;
+        let websocket = null;
+        let startTime = Date.now();
+        
+        // Configuration
+        const API_BASE = 'http://127.0.0.1:8002';
+        const WS_URL = 'ws://127.0.0.1:8002/ws';
+        
+        // Dashboard data
+        const dashboardData = {
+            buildings: 0,
+            accuracy: 94.2,
+            throughput: 0,
+            uptime: 0,
+            queueSize: 0,
+            activeWorkers: 3,
+            memoryUsage: 45,
+            cpuUsage: 32,
+            performanceHistory: {
+                timestamps: [],
+                throughput: [],
+                accuracy: [],
+                latency: [],
+                successRate: []
+            },
+            modelStats: {
+                mask_rcnn: { accuracy: 89.2, speed: 1.8, jobs: 150 },
+                adaptive_fusion: { accuracy: 92.4, speed: 1.2, jobs: 203 },
+                hybrid: { accuracy: 94.7, speed: 2.1, jobs: 87 }
+            },
+            regionalData: {
+                'North America': 45,
+                'Europe': 32,
+                'Asia Pacific': 58,
+                'Africa': 23,
+                'South America': 18,
+                'Oceania': 12
+            },
+            activityLog: []
+        };
+
+        // Initialize dashboard
+        document.addEventListener('DOMContentLoaded', function() {
+            initializeCharts();
+            connectWebSocket();
+            startDataSimulation();
+            setupEventListeners();
+            updateUptime();
+        });
+
+        function initializeCharts() {
+            // Performance Chart
+            const performanceCtx = document.getElementById('performance-chart').getContext('2d');
+            performanceChart = new Chart(performanceCtx, {
+                type: 'line',
+                data: {
+                    labels: [],
+                    datasets: [{
+                        label: 'Throughput (img/s)',
+                        data: [],
+                        borderColor: '#64ffda',
+                        backgroundColor: 'rgba(100, 255, 218, 0.1)',
+                        tension: 0.4,
+                        fill: true
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            labels: { color: '#ffffff' }
+                        }
+                    },
+                    scales: {
+                        x: {
+                            grid: { color: 'rgba(100, 255, 218, 0.1)' },
+                            ticks: { color: '#64ffda' }
+                        },
+                        y: {
+                            beginAtZero: true,
+                            grid: { color: 'rgba(100, 255, 218, 0.1)' },
+                            ticks: { color: '#64ffda' }
+                        }
+                    },
+                    animation: {
+                        duration: 500
+                    }
+                }
+            });
+
+            // Model Comparison Chart
+            const modelCtx = document.getElementById('model-comparison-chart').getContext('2d');
+            modelComparisonChart = new Chart(modelCtx, {
+                type: 'radar',
+                data: {
+                    labels: ['Accuracy', 'Speed', 'Reliability', 'Memory Efficiency', 'Scalability'],
+                    datasets: [
+                        {
+                            label: 'Mask R-CNN',
+                            data: [89, 70, 85, 75, 80],
+                            borderColor: '#ff6b6b',
+                            backgroundColor: 'rgba(255, 107, 107, 0.1)',
+                            pointBackgroundColor: '#ff6b6b'
+                        },
+                        {
+                            label: 'Adaptive Fusion',
+                            data: [92, 90, 88, 85, 90],
+                            borderColor: '#4ecdc4',
+                            backgroundColor: 'rgba(78, 205, 196, 0.1)',
+                            pointBackgroundColor: '#4ecdc4'
+                        },
+                        {
+                            label: 'Hybrid',
+                            data: [95, 65, 92, 70, 75],
+                            borderColor: '#64ffda',
+                            backgroundColor: 'rgba(100, 255, 218, 0.1)',
+                            pointBackgroundColor: '#64ffda'
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            labels: { color: '#ffffff' }
+                        }
+                    },
+                    scales: {
+                        r: {
+                            angleLines: { color: 'rgba(100, 255, 218, 0.2)' },
+                            grid: { color: 'rgba(100, 255, 218, 0.2)' },
+                            pointLabels: { color: '#64ffda' },
+                            ticks: { color: '#64ffda' }
+                        }
+                    }
+                }
+            });
+
+            // Regional Chart
+            const regionalCtx = document.getElementById('regional-chart').getContext('2d');
+            regionalChart = new Chart(regionalCtx, {
+                type: 'doughnut',
+                data: {
+                    labels: Object.keys(dashboardData.regionalData),
+                    datasets: [{
+                        data: Object.values(dashboardData.regionalData),
+                        backgroundColor: [
+                            '#64ffda',
+                            '#4ecdc4',
+                            '#45b7d1',
+                            '#f39c12',
+                            '#e74c3c',
+                            '#9b59b6'
+                        ],
+                        borderWidth: 2,
+                        borderColor: 'rgba(0, 0, 0, 0.1)'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'bottom',
+                            labels: { color: '#ffffff', padding: 15 }
+                        }
+                    }
+                }
+            });
+        }
+
+        function connectWebSocket() {
+            try {
+                websocket = new WebSocket(WS_URL);
+                
+                websocket.onopen = function(event) {
+                    console.log('WebSocket connected to dashboard');
+                    updateStatus('websocket-status', true);
+                    addActivity('System', 'WebSocket connection established');
+                };
+                
+                websocket.onmessage = function(event) {
+                    const data = JSON.parse(event.data);
+                    handleWebSocketMessage(data);
+                };
+                
+                websocket.onclose = function(event) {
+                    console.log('WebSocket disconnected');
+                    updateStatus('websocket-status', false);
+                    addActivity('System', 'WebSocket connection lost');
+                    
+                    // Attempt to reconnect
+                    setTimeout(connectWebSocket, 5000);
+                };
+                
+                websocket.onerror = function(error) {
+                    console.error('WebSocket error:', error);
+                    updateStatus('websocket-status', false);
+                };
+                
+            } catch (error) {
+                console.log('WebSocket not available, using simulation mode');
+                updateStatus('websocket-status', false);
+            }
+        }
+
+        function handleWebSocketMessage(data) {
+            switch (data.type) {
+                case 'job_completed':
+                    if (data.results) {
+                        dashboardData.buildings += data.results.buildings_detected || 0;
+                        addActivity('ML Processing', `Job completed: ${data.results.buildings_detected} buildings detected`);
+                        updateDashboard();
+                    }
+                    break;
+                    
+                case 'job_progress':
+                    dashboardData.queueSize = Math.max(0, dashboardData.queueSize + 1);
+                    updateDashboard();
+                    break;
+                    
+                case 'system_metrics':
+                    updateSystemMetrics(data.metrics);
+                    break;
+            }
+        }
+
+        function startDataSimulation() {
+            // Simulate real-time data updates
+            setInterval(() => {
+                // Generate realistic throughput data
+                const newThroughput = 0.5 + Math.random() * 2 + Math.sin(Date.now() / 60000) * 0.5;
+                dashboardData.throughput = newThroughput;
+                
+                // Update performance history
+                const now = new Date();
+                const timeLabel = now.toLocaleTimeString();
+                
+                dashboardData.performanceHistory.timestamps.push(timeLabel);
+                dashboardData.performanceHistory.throughput.push(newThroughput);
+                dashboardData.performanceHistory.accuracy.push(90 + Math.random() * 8);
+                dashboardData.performanceHistory.latency.push(800 + Math.random() * 400);
+                dashboardData.performanceHistory.successRate.push(95 + Math.random() * 5);
+                
+                // Keep only last 20 data points
+                if (dashboardData.performanceHistory.timestamps.length > 20) {
+                    Object.keys(dashboardData.performanceHistory).forEach(key => {
+                        dashboardData.performanceHistory[key].shift();
+                    });
+                }
+                
+                // Update charts
+                updatePerformanceChart();
+                
+                // Simulate system metrics changes
+                dashboardData.memoryUsage = 40 + Math.random() * 30;
+                dashboardData.cpuUsage = 20 + Math.random() * 40;
+                dashboardData.queueSize = Math.max(0, dashboardData.queueSize + (Math.random() - 0.5) * 2);
+                
+                updateDashboard();
+                
+                // Occasionally add activity
+                if (Math.random() < 0.3) {
+                    const activities = [
+                        'New image uploaded for processing',
+                        'Model training completed',
+                        'Cache optimization performed',
+                        'Backup process initiated',
+                        'Performance threshold exceeded'
+                    ];
+                    const randomActivity = activities[Math.floor(Math.random() * activities.length)];
+                    addActivity('System', randomActivity);
+                }
+                
+            }, 2000);
+            
+            // Simulate building detection
+            setInterval(() => {
+                if (Math.random() < 0.4) {
+                    const newBuildings = Math.floor(Math.random() * 10) + 1;
+                    dashboardData.buildings += newBuildings;
+                    addActivity('Detection', `${newBuildings} new buildings detected`);
+                    updateDashboard();
+                }
+            }, 3000);
+            
+            // Check system status periodically
+            setInterval(checkSystemStatus, 10000);
+        }
+
+        async function checkSystemStatus() {
+            try {
+                const response = await axios.get(`${API_BASE}/health`);
+                updateStatus('api-status', response.status === 200);
+                updateStatus('ml-engine-status', response.data.features?.ml_processing || false);
+                updateStatus('database-status', response.data.features?.redis_caching || false);
+            } catch (error) {
+                updateStatus('api-status', false);
+                updateStatus('ml-engine-status', false);
+                updateStatus('database-status', false);
+            }
+        }
+
+        function updatePerformanceChart() {
+            const metric = document.getElementById('performance-metric').value;
+            const data = dashboardData.performanceHistory[metric.replace('-', '')];
+            
+            performanceChart.data.labels = dashboardData.performanceHistory.timestamps;
+            performanceChart.data.datasets[0].data = data || dashboardData.performanceHistory.throughput;
+            performanceChart.data.datasets[0].label = getMetricLabel(metric);
+            performanceChart.update('none');
+        }
+
+        function getMetricLabel(metric) {
+            const labels = {
+                'throughput': 'Throughput (img/s)',
+                'accuracy': 'Accuracy (%)',
+                'latency': 'Latency (ms)',
+                'success-rate': 'Success Rate (%)'
+            };
+            return labels[metric] || 'Metric';
+        }
+
+        function updateDashboard() {
+            // Update header stats
+            document.getElementById('live-buildings').textContent = dashboardData.buildings.toLocaleString();
+            document.getElementById('live-accuracy').textContent = dashboardData.accuracy.toFixed(1) + '%';
+            document.getElementById('live-throughput').textContent = dashboardData.throughput.toFixed(1);
+            
+            // Update sidebar metrics
+            document.getElementById('queue-size').textContent = Math.floor(dashboardData.queueSize);
+            document.getElementById('memory-usage').textContent = Math.floor(dashboardData.memoryUsage) + '%';
+            document.getElementById('cpu-usage').textContent = Math.floor(dashboardData.cpuUsage) + '%';
+        }
+
+        function updateUptime() {
+            setInterval(() => {
+                const uptime = Date.now() - startTime;
+                const hours = Math.floor(uptime / (1000 * 60 * 60));
+                const minutes = Math.floor((uptime % (1000 * 60 * 60)) / (1000 * 60));
+                const seconds = Math.floor((uptime % (1000 * 60)) / 1000);
+                
+                document.getElementById('live-uptime').textContent = 
+                    `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+            }, 1000);
+        }
+
+        function updateStatus(elementId, isOnline) {
+            const element = document.getElementById(elementId);
+            if (isOnline) {
+                element.classList.remove('status-offline', 'status-warning');
+            } else {
+                element.classList.add('status-offline');
+            }
+        }
+
+        function addActivity(type, message) {
+            const activity = {
+                time: new Date().toLocaleTimeString(),
+                type: type,
+                message: message
+            };
+            
+            dashboardData.activityLog.unshift(activity);
+            
+            // Keep only last 50 activities
+            if (dashboardData.activityLog.length > 50) {
+                dashboardData.activityLog.pop();
+            }
+            
+            updateActivityFeed();
+        }
+
+        function updateActivityFeed() {
+            const feedElement = document.getElementById('activity-feed');
+            feedElement.innerHTML = '';
+            
+            dashboardData.activityLog.slice(0, 10).forEach(activity => {
+                const activityElement = document.createElement('div');
+                activityElement.className = 'activity-item fade-in';
+                activityElement.innerHTML = `
+                    <div class="activity-time">${activity.time} - ${activity.type}</div>
+                    <div class="activity-text">${activity.message}</div>
+                `;
+                feedElement.appendChild(activityElement);
+            });
+        }
+
+        function setupEventListeners() {
+            // Performance metric selector
+            document.getElementById('performance-metric').addEventListener('change', updatePerformanceChart);
+            
+            // Time range selector
+            document.getElementById('time-range').addEventListener('change', function() {
+                addActivity('Dashboard', `Time range changed to: ${this.options[this.selectedIndex].text}`);
+            });
+            
+            // Model filter
+            document.getElementById('model-filter').addEventListener('change', function() {
+                addActivity('Filter', `Model filter changed to: ${this.options[this.selectedIndex].text}`);
+            });
+            
+            // Region filter
+            document.getElementById('region-filter').addEventListener('change', function() {
+                addActivity('Filter', `Region filter changed to: ${this.options[this.selectedIndex].text}`);
+            });
+        }
+
+        // Initialize dashboard
+        updateDashboard();
+        addActivity('System', 'Dashboard initialized successfully');
+        
+        // Set initial status
+        updateStatus('ml-engine-status', true);
+        updateStatus('database-status', false);
+        updateStatus('api-status', true);
+        updateStatus('websocket-status', false);
+    </script>
+</body>
+</html>

@@ -1,0 +1,759 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GeoAI Research Platform - Building Footprint Extraction</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://unpkg.com/axios/dist/axios.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: linear-gradient(135deg, #0c0c1f 0%, #1a1a3e 50%, #0c0c1f 100%);
+            color: #ffffff;
+            overflow-x: hidden;
+            line-height: 1.6;
+        }
+
+        .header {
+            position: fixed;
+            top: 0;
+            width: 100%;
+            padding: 1.5rem 2rem;
+            background: rgba(12, 12, 31, 0.9);
+            backdrop-filter: blur(30px);
+            border-bottom: 1px solid rgba(100, 255, 218, 0.2);
+            z-index: 1000;
+        }
+
+        .nav {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            max-width: 1600px;
+            margin: 0 auto;
+        }
+
+        .logo {
+            font-size: 2rem;
+            font-weight: 900;
+            background: linear-gradient(135deg, #64ffda 0%, #00d4ff 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .nav-links {
+            display: flex;
+            list-style: none;
+            gap: 2rem;
+        }
+
+        .nav-links a {
+            color: rgba(255, 255, 255, 0.8);
+            text-decoration: none;
+            transition: color 0.3s ease;
+            font-weight: 500;
+        }
+
+        .nav-links a:hover {
+            color: #64ffda;
+        }
+
+        .main-content {
+            padding-top: 100px;
+        }
+
+        .hero {
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            padding: 2rem;
+            position: relative;
+        }
+
+        .hero-content {
+            max-width: 1200px;
+            z-index: 10;
+            position: relative;
+        }
+
+        .hero-title {
+            font-size: clamp(2.5rem, 6vw, 5rem);
+            font-weight: 900;
+            margin-bottom: 2rem;
+            background: linear-gradient(135deg, #ffffff 0%, #64ffda 30%, #00d4ff 70%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .hero-subtitle {
+            font-size: 1.3rem;
+            color: rgba(255, 255, 255, 0.8);
+            margin-bottom: 3rem;
+            max-width: 800px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        .hero-buttons {
+            display: flex;
+            gap: 1.5rem;
+            justify-content: center;
+            flex-wrap: wrap;
+            margin-bottom: 4rem;
+        }
+
+        .btn-primary {
+            padding: 1rem 2.5rem;
+            background: linear-gradient(135deg, #64ffda 0%, #00d4ff 100%);
+            color: #0c0c1f;
+            text-decoration: none;
+            border-radius: 50px;
+            font-weight: 700;
+            transition: all 0.3s ease;
+            border: none;
+            cursor: pointer;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(100, 255, 218, 0.3);
+        }
+
+        .btn-secondary {
+            padding: 1rem 2.5rem;
+            background: transparent;
+            color: #ffffff;
+            text-decoration: none;
+            border: 2px solid rgba(100, 255, 218, 0.3);
+            border-radius: 50px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+
+        .btn-secondary:hover {
+            border-color: #64ffda;
+            background: rgba(100, 255, 218, 0.1);
+        }
+
+        .demo-section {
+            padding: 4rem 2rem;
+            background: rgba(0, 0, 0, 0.2);
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        .section-title {
+            font-size: 2.5rem;
+            font-weight: 800;
+            text-align: center;
+            margin-bottom: 3rem;
+            background: linear-gradient(135deg, #64ffda 0%, #00d4ff 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .demo-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+            gap: 2rem;
+            margin-top: 3rem;
+        }
+
+        .demo-card {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(100, 255, 218, 0.2);
+            border-radius: 20px;
+            padding: 2rem;
+            backdrop-filter: blur(20px);
+            transition: all 0.3s ease;
+        }
+
+        .demo-card:hover {
+            border-color: rgba(100, 255, 218, 0.5);
+            transform: translateY(-5px);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
+        }
+
+        .demo-card h3 {
+            font-size: 1.5rem;
+            margin-bottom: 1rem;
+            color: #64ffda;
+        }
+
+        .demo-card p {
+            color: rgba(255, 255, 255, 0.8);
+            margin-bottom: 1.5rem;
+        }
+
+        .status-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 2rem;
+            margin-top: 3rem;
+        }
+
+        .status-card {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(100, 255, 218, 0.2);
+            border-radius: 16px;
+            padding: 2rem;
+            backdrop-filter: blur(20px);
+        }
+
+        .status-indicator {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            margin-bottom: 1rem;
+        }
+
+        .status-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: #10b981;
+            animation: pulse 2s infinite;
+        }
+
+        .status-offline {
+            background: #ef4444;
+        }
+
+        .status-title {
+            font-weight: 600;
+            color: #ffffff;
+        }
+
+        .status-value {
+            color: #64ffda;
+            font-weight: 700;
+            font-size: 1.1rem;
+        }
+
+        .canvas-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 1;
+            pointer-events: none;
+        }
+
+        .ml-demo {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(100, 255, 218, 0.2);
+            border-radius: 20px;
+            padding: 2rem;
+            margin: 2rem 0;
+            backdrop-filter: blur(20px);
+        }
+
+        .upload-area {
+            border: 2px dashed rgba(100, 255, 218, 0.3);
+            border-radius: 12px;
+            padding: 3rem 2rem;
+            text-align: center;
+            margin: 2rem 0;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .upload-area:hover {
+            border-color: #64ffda;
+            background: rgba(100, 255, 218, 0.05);
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 8px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 4px;
+            margin: 1rem 0;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(135deg, #64ffda 0%, #00d4ff 100%);
+            border-radius: 4px;
+            transition: width 0.3s ease;
+            width: 0%;
+        }
+
+        .results-container {
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 12px;
+            padding: 2rem;
+            margin: 2rem 0;
+            display: none;
+        }
+
+        .results-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1.5rem;
+        }
+
+        .result-card {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 8px;
+            padding: 1.5rem;
+            text-align: center;
+        }
+
+        .result-number {
+            font-size: 2rem;
+            font-weight: 900;
+            color: #64ffda;
+            margin-bottom: 0.5rem;
+        }
+
+        .result-label {
+            color: rgba(255, 255, 255, 0.8);
+            font-size: 0.9rem;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .fade-in {
+            animation: fadeIn 0.6s ease-out;
+        }
+
+        .footer {
+            padding: 3rem 2rem;
+            background: rgba(0, 0, 0, 0.4);
+            text-align: center;
+            color: rgba(255, 255, 255, 0.6);
+            border-top: 1px solid rgba(100, 255, 218, 0.2);
+        }
+
+        @media (max-width: 768px) {
+            .nav-links {
+                display: none;
+            }
+            
+            .hero-buttons {
+                flex-direction: column;
+                align-items: center;
+            }
+            
+            .demo-grid,
+            .status-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- 3D Background Canvas -->
+    <div class="canvas-container" id="canvas-container"></div>
+
+    <!-- Header -->
+    <header class="header">
+        <nav class="nav">
+            <div class="logo">GeoAI Research Platform</div>
+            <ul class="nav-links">
+                <li><a href="#home">Home</a></li>
+                <li><a href="#demo">Demo</a></li>
+                <li><a href="#api">API</a></li>
+                <li><a href="#status">Status</a></li>
+            </ul>
+        </nav>
+    </header>
+
+    <main class="main-content">
+        <!-- Hero Section -->
+        <section id="home" class="hero">
+            <div class="hero-content">
+                <h1 class="hero-title">Advanced Building Footprint AI</h1>
+                <p class="hero-subtitle">
+                    State-of-the-art ML models for building detection using Mask R-CNN, 
+                    Adaptive Fusion, and hybrid processing techniques with real-time 3D visualization.
+                </p>
+                
+                <div class="hero-buttons">
+                    <button class="btn-primary" onclick="scrollToDemo()">Try Live Demo</button>
+                    <button class="btn-secondary" onclick="checkServerStatus()">Check API Status</button>
+                </div>
+            </div>
+        </section>
+
+        <!-- Live Demo Section -->
+        <section id="demo" class="demo-section">
+            <div class="container">
+                <h2 class="section-title">Live ML Processing Demo</h2>
+                
+                <div class="ml-demo">
+                    <h3>🧠 Building Footprint Extraction</h3>
+                    <p>Upload an image or use our test data to see ML models in action</p>
+                    
+                    <div class="upload-area" onclick="triggerFileUpload()">
+                        <div>
+                            <h4>📤 Click to upload image or drag & drop</h4>
+                            <p>Supported formats: JPG, PNG, GeoTIFF</p>
+                        </div>
+                        <input type="file" id="imageUpload" style="display: none;" accept="image/*" onchange="handleFileUpload(event)">
+                    </div>
+
+                    <div style="display: flex; gap: 1rem; flex-wrap: wrap; margin: 2rem 0;">
+                        <button class="btn-primary" onclick="runMLTest('mask_rcnn')">🎯 Test Mask R-CNN</button>
+                        <button class="btn-primary" onclick="runMLTest('adaptive_fusion')">⚡ Test Adaptive Fusion</button>
+                        <button class="btn-primary" onclick="runMLTest('hybrid')">🔬 Test Hybrid Model</button>
+                    </div>
+
+                    <div id="processing-status" style="display: none;">
+                        <h4>Processing...</h4>
+                        <div class="progress-bar">
+                            <div class="progress-fill" id="progress-fill"></div>
+                        </div>
+                        <p id="status-text">Initializing ML models...</p>
+                    </div>
+
+                    <div class="results-container" id="results-container">
+                        <h4>🏢 Detection Results</h4>
+                        <div class="results-grid" id="results-grid">
+                            <!-- Results will be populated here -->
+                        </div>
+                    </div>
+                </div>
+
+                <div class="demo-grid">
+                    <div class="demo-card">
+                        <h3>🌍 3D Globe Visualization</h3>
+                        <p>Interactive globe with building footprint markers and real-time data visualization</p>
+                        <button class="btn-secondary" onclick="initGlobe()">Launch 3D Globe</button>
+                    </div>
+
+                    <div class="demo-card">
+                        <h3>📊 Real-time Analytics</h3>
+                        <p>Live performance metrics, processing statistics, and model comparison charts</p>
+                        <button class="btn-secondary" onclick="showAnalytics()">View Analytics</button>
+                    </div>
+
+                    <div class="demo-card">
+                        <h3>🔌 API Integration</h3>
+                        <p>RESTful API with comprehensive endpoints for ML processing and data management</p>
+                        <button class="btn-secondary" onclick="showApiDocs()">API Documentation</button>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- System Status Section -->
+        <section id="status" class="demo-section">
+            <div class="container">
+                <h2 class="section-title">System Status</h2>
+                
+                <div class="status-grid" id="status-grid">
+                    <div class="status-card">
+                        <div class="status-indicator">
+                            <div class="status-dot" id="server-status"></div>
+                            <div class="status-title">API Server</div>
+                        </div>
+                        <div class="status-value" id="server-status-text">Checking...</div>
+                    </div>
+
+                    <div class="status-card">
+                        <div class="status-indicator">
+                            <div class="status-dot" id="ml-status"></div>
+                            <div class="status-title">ML Models</div>
+                        </div>
+                        <div class="status-value" id="ml-status-text">Checking...</div>
+                    </div>
+
+                    <div class="status-card">
+                        <div class="status-indicator">
+                            <div class="status-dot" id="frontend-status"></div>
+                            <div class="status-title">Frontend</div>
+                        </div>
+                        <div class="status-value" id="frontend-status-text">Active</div>
+                    </div>
+
+                    <div class="status-card">
+                        <div class="status-indicator">
+                            <div class="status-dot" id="db-status"></div>
+                            <div class="status-title">Database</div>
+                        </div>
+                        <div class="status-value" id="db-status-text">Checking...</div>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <footer class="footer">
+        <div class="container">
+            <p>&copy; 2025 GeoAI Research Platform. Advanced Building Footprint Detection System.</p>
+        </div>
+    </footer>
+
+    <script>
+        // Configuration
+        const API_BASE = 'http://127.0.0.1:8002';
+        let scene, camera, renderer, globe;
+
+        // Initialize the page
+        document.addEventListener('DOMContentLoaded', function() {
+            initBackground3D();
+            checkSystemStatus();
+            setupEventListeners();
+        });
+
+        // 3D Background Animation
+        function initBackground3D() {
+            const container = document.getElementById('canvas-container');
+            
+            scene = new THREE.Scene();
+            camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+            renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
+            
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.setClearColor(0x000000, 0);
+            container.appendChild(renderer.domElement);
+
+            // Create floating particles
+            const particlesGeometry = new THREE.BufferGeometry();
+            const particlesCount = 1000;
+            const posArray = new Float32Array(particlesCount * 3);
+
+            for (let i = 0; i < particlesCount * 3; i++) {
+                posArray[i] = (Math.random() - 0.5) * 100;
+            }
+
+            particlesGeometry.setAttribute('position', new THREE.BufferAttribute(posArray, 3));
+            
+            const particlesMaterial = new THREE.PointsMaterial({
+                size: 0.5,
+                color: 0x64ffda,
+                transparent: true,
+                opacity: 0.6
+            });
+
+            const particlesMesh = new THREE.Points(particlesGeometry, particlesMaterial);
+            scene.add(particlesMesh);
+
+            camera.position.z = 50;
+
+            // Animation loop
+            function animate() {
+                requestAnimationFrame(animate);
+                
+                particlesMesh.rotation.x += 0.001;
+                particlesMesh.rotation.y += 0.002;
+                
+                renderer.render(scene, camera);
+            }
+            
+            animate();
+
+            // Handle window resize
+            window.addEventListener('resize', () => {
+                camera.aspect = window.innerWidth / window.innerHeight;
+                camera.updateProjectionMatrix();
+                renderer.setSize(window.innerWidth, window.innerHeight);
+            });
+        }
+
+        // Check system status
+        async function checkSystemStatus() {
+            try {
+                const response = await axios.get(`${API_BASE}/health`);
+                updateStatus('server-status', 'server-status-text', true, 'Healthy');
+                
+                if (response.data.features) {
+                    updateStatus('ml-status', 'ml-status-text', 
+                        response.data.features.ml_processing, 
+                        response.data.features.ml_processing ? 'Available' : 'Offline');
+                    
+                    updateStatus('db-status', 'db-status-text', 
+                        response.data.features.redis_caching, 
+                        response.data.features.redis_caching ? 'Connected' : 'In-Memory');
+                }
+            } catch (error) {
+                updateStatus('server-status', 'server-status-text', false, 'Offline');
+                updateStatus('ml-status', 'ml-status-text', false, 'Unavailable');
+                updateStatus('db-status', 'db-status-text', false, 'Offline');
+            }
+        }
+
+        function updateStatus(dotId, textId, isOnline, text) {
+            const dot = document.getElementById(dotId);
+            const textEl = document.getElementById(textId);
+            
+            if (isOnline) {
+                dot.classList.remove('status-offline');
+            } else {
+                dot.classList.add('status-offline');
+            }
+            
+            textEl.textContent = text;
+        }
+
+        // ML Processing functions
+        async function runMLTest(modelType) {
+            const processingStatus = document.getElementById('processing-status');
+            const resultsContainer = document.getElementById('results-container');
+            const progressFill = document.getElementById('progress-fill');
+            const statusText = document.getElementById('status-text');
+            
+            // Show processing UI
+            processingStatus.style.display = 'block';
+            resultsContainer.style.display = 'none';
+            progressFill.style.width = '0%';
+            statusText.textContent = `Initializing ${modelType} model...`;
+
+            try {
+                // Start ML processing
+                const jobResponse = await axios.post(`${API_BASE}/api/v1/ml-processing/extract-buildings`, {
+                    image_url: 'https://example.com/test-image.jpg',
+                    model_type: modelType,
+                    apply_regularization: true
+                });
+
+                const jobId = jobResponse.data.job_id;
+                
+                // Poll for progress
+                let progress = 0;
+                const pollInterval = setInterval(async () => {
+                    try {
+                        const statusResponse = await axios.get(`${API_BASE}/api/v1/jobs/${jobId}`);
+                        const job = statusResponse.data;
+                        
+                        progress = job.progress || 0;
+                        progressFill.style.width = `${progress}%`;
+                        statusText.textContent = job.current_stage || `Processing with ${modelType}...`;
+                        
+                        if (job.status === 'completed') {
+                            clearInterval(pollInterval);
+                            showResults(job.results, modelType);
+                            processingStatus.style.display = 'none';
+                        } else if (job.status === 'failed') {
+                            clearInterval(pollInterval);
+                            showError(job.error || 'Processing failed');
+                            processingStatus.style.display = 'none';
+                        }
+                    } catch (error) {
+                        clearInterval(pollInterval);
+                        showError('Failed to check job status');
+                        processingStatus.style.display = 'none';
+                    }
+                }, 1000);
+
+            } catch (error) {
+                processingStatus.style.display = 'none';
+                showError(error.response?.data?.detail || 'Failed to start ML processing');
+            }
+        }
+
+        function showResults(results, modelType) {
+            const resultsContainer = document.getElementById('results-container');
+            const resultsGrid = document.getElementById('results-grid');
+            
+            resultsGrid.innerHTML = `
+                <div class="result-card">
+                    <div class="result-number">${results.buildings_detected || 0}</div>
+                    <div class="result-label">Buildings Detected</div>
+                </div>
+                <div class="result-card">
+                    <div class="result-number">${modelType}</div>
+                    <div class="result-label">Model Used</div>
+                </div>
+                <div class="result-card">
+                    <div class="result-number">${(results.processing_time || 0).toFixed(1)}s</div>
+                    <div class="result-label">Processing Time</div>
+                </div>
+                <div class="result-card">
+                    <div class="result-number">${results.regularization_applied ? 'Yes' : 'No'}</div>
+                    <div class="result-label">Regularization</div>
+                </div>
+            `;
+            
+            resultsContainer.style.display = 'block';
+            resultsContainer.classList.add('fade-in');
+        }
+
+        function showError(message) {
+            alert(`Error: ${message}`);
+        }
+
+        // UI Helper functions
+        function scrollToDemo() {
+            document.getElementById('demo').scrollIntoView({ behavior: 'smooth' });
+        }
+
+        function checkServerStatus() {
+            checkSystemStatus();
+            document.getElementById('status').scrollIntoView({ behavior: 'smooth' });
+        }
+
+        function triggerFileUpload() {
+            document.getElementById('imageUpload').click();
+        }
+
+        function handleFileUpload(event) {
+            const file = event.target.files[0];
+            if (file) {
+                alert(`File selected: ${file.name}\nThis would normally upload and process the image with ML models.`);
+            }
+        }
+
+        function initGlobe() {
+            alert('3D Globe visualization would be initialized here with building footprint data.');
+        }
+
+        function showAnalytics() {
+            alert('Real-time analytics dashboard would be shown here.');
+        }
+
+        function showApiDocs() {
+            window.open(`${API_BASE}/docs`, '_blank');
+        }
+
+        function setupEventListeners() {
+            // Header scroll effect
+            const header = document.querySelector('.header');
+            window.addEventListener('scroll', () => {
+                if (window.scrollY > 100) {
+                    header.style.background = 'rgba(12, 12, 31, 0.95)';
+                } else {
+                    header.style.background = 'rgba(12, 12, 31, 0.9)';
+                }
+            });
+        }
+
+        // Refresh status every 30 seconds
+        setInterval(checkSystemStatus, 30000);
+    </script>
+</body>
+</html>

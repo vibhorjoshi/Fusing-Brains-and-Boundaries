@@ -1,0 +1,101 @@
+# Multi-stage build for GeoAI ML Backend
+FROM python:3.12-slim as builder
+
+# Install system dependencies for ML libraries
+RUN apt-get update && apt-get install -y \
+    build-essential \
+    curl \
+    software-properties-common \
+    git \
+    libgl1-mesa-glx \
+    libglib2.0-0 \
+    libsm6 \
+    libxext6 \
+    libxrender-dev \
+    libgomp1 \
+    libgeos-dev \
+    libproj-dev \
+    libgdal-dev \
+    && rm -rf /var/lib/apt/lists/*
+
+# Set environment variables
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1 \
+    PYTHONPATH="/app" \
+    PIP_NO_CACHE_DIR=1 \
+    PIP_DISABLE_PIP_VERSION_CHECK=1
+
+# Create app directory
+WORKDIR /app
+
+# Copy requirements first (for better caching)
+COPY requirements.txt .
+COPY streamlit_requirements.txt .
+
+# Install Python dependencies
+RUN pip install --no-cache-dir -r requirements.txt && \
+    pip install --no-cache-dir -r streamlit_requirements.txt && \
+    pip install --no-cache-dir \
+    fastapi==0.104.1 \
+    uvicorn[standard]==0.24.0 \
+    redis==5.0.1 \
+    python-multipart==0.0.6 \
+    python-jose[cryptography]==3.3.0 \
+    passlib[bcrypt]==1.7.4 \
+    pydantic-settings==2.1.0 \
+    requests==2.31.0 \
+    pillow==10.1.0 \
+    numpy==1.26.2 \
+    opencv-python==4.8.1.78 \
+    scikit-image==0.22.0 \
+    matplotlib==3.8.2 \
+    aiofiles==23.2.1
+
+# Production stage
+FROM python:3.12-slim
+
+# Install runtime dependencies
+RUN apt-get update && apt-get install -y \
+    curl \
+    libgl1-mesa-glx \
+    libglib2.0-0 \
+    libsm6 \
+    libxext6 \
+    libxrender-dev \
+    libgomp1 \
+    && rm -rf /var/lib/apt/lists/*
+
+# Set environment variables
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1 \
+    PYTHONPATH="/app"
+
+# Create non-root user
+RUN groupadd -r geoai && useradd -r -g geoai geoai
+
+# Create app directory
+WORKDIR /app
+
+# Copy installed packages from builder
+COPY --from=builder /usr/local/lib/python3.12/site-packages /usr/local/lib/python3.12/site-packages
+COPY --from=builder /usr/local/bin /usr/local/bin
+
+# Copy application code
+COPY . .
+
+# Create directories for data and models
+RUN mkdir -p /app/data /app/outputs /app/models /app/logs && \
+    chown -R geoai:geoai /app
+
+# Switch to non-root user
+USER geoai
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
+    CMD curl -f http://localhost:8002/health || exit 1
+
+# Expose port
+EXPOSE 8002
+
+# Start command
+CMD ["uvicorn", "simple_demo_server:app", "--host", "0.0.0.0", "--port", "8002", "--workers", "1"]

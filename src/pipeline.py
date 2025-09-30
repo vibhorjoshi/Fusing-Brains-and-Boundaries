@@ -22,13 +22,7 @@ from .regularizer import HybridRegularizer
 from .adaptive_fusion import AdaptiveFusion
 from .post_processor import PostProcessor
 from .evaluator import Evaluator
-from .data_handler import RasterDataLoader, Bu		for na	for n	for n	for n	for name, _, t, _ in methods:
-		row[name] = str(f"{float(t):.3f}")e, m, _, _ in methods:
-		row[name] = str(f"{float(m.get('iou', 0.0) * 100.0):.2f}")e, _, _, lc in methods:
-		row[name] = str(f"{float(lc):.2f}")e, m, _, _ in methods:
-		row[name] = str(f"{float(robust_score(m.get('hausdorff_distance', float('inf')))):.2f}"), m, _, _ in methods:
-			val = m.get(key, 0.0) * scale
-			row[name] = str(f"{float(val):.2f}")ingDataset, collate_fn
+from .data_handler import RasterDataLoader, BuildingDataset, collate_fn
 from .reports import plot_iou_comparison, draw_architecture_pipeline
 
 

@@ -1,0 +1,942 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GeoAI Live Visualization - Real-time Building Detection</title>
+    
+    <!-- External Libraries -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://unpkg.com/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
+    <script src="https://unpkg.com/axios/dist/axios.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.8.5/d3.min.js"></script>
+    
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #0c0c0c 0%, #1a1a2e 50%, #16213e 100%);
+            color: #ffffff;
+            overflow: hidden;
+            height: 100vh;
+        }
+
+        .visualization-container {
+            display: grid;
+            grid-template-columns: 1fr 400px;
+            grid-template-rows: 60px 1fr 200px;
+            height: 100vh;
+            gap: 10px;
+            padding: 10px;
+        }
+
+        .header {
+            grid-column: 1 / -1;
+            background: rgba(0, 20, 40, 0.8);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(64, 255, 218, 0.2);
+            border-radius: 12px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0 20px;
+        }
+
+        .logo {
+            font-size: 1.5rem;
+            font-weight: 800;
+            background: linear-gradient(135deg, #64ffda 0%, #00d4ff 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .status-indicators {
+            display: flex;
+            gap: 20px;
+            align-items: center;
+        }
+
+        .status-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .status-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: #10b981;
+            animation: pulse 2s infinite;
+        }
+
+        .status-offline {
+            background: #ef4444;
+        }
+
+        .main-visualization {
+            background: rgba(0, 20, 40, 0.4);
+            border: 1px solid rgba(64, 255, 218, 0.2);
+            border-radius: 12px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .sidebar {
+            display: grid;
+            grid-template-rows: 1fr 1fr;
+            gap: 10px;
+        }
+
+        .control-panel {
+            background: rgba(0, 20, 40, 0.6);
+            border: 1px solid rgba(64, 255, 218, 0.2);
+            border-radius: 12px;
+            padding: 20px;
+            backdrop-filter: blur(20px);
+        }
+
+        .metrics-panel {
+            background: rgba(0, 20, 40, 0.6);
+            border: 1px solid rgba(64, 255, 218, 0.2);
+            border-radius: 12px;
+            padding: 20px;
+            backdrop-filter: blur(20px);
+        }
+
+        .bottom-panel {
+            grid-column: 1 / -1;
+            background: rgba(0, 20, 40, 0.6);
+            border: 1px solid rgba(64, 255, 218, 0.2);
+            border-radius: 12px;
+            padding: 20px;
+            backdrop-filter: blur(20px);
+        }
+
+        .panel-title {
+            font-size: 1.2rem;
+            font-weight: 600;
+            margin-bottom: 15px;
+            color: #64ffda;
+        }
+
+        .control-button {
+            width: 100%;
+            padding: 12px;
+            margin-bottom: 10px;
+            background: linear-gradient(135deg, #64ffda 0%, #00d4ff 100%);
+            color: #0c0c1f;
+            border: none;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .control-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(100, 255, 218, 0.3);
+        }
+
+        .control-button.secondary {
+            background: transparent;
+            color: #64ffda;
+            border: 1px solid rgba(100, 255, 218, 0.3);
+        }
+
+        .metric-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px 0;
+            border-bottom: 1px solid rgba(100, 255, 218, 0.1);
+        }
+
+        .metric-value {
+            color: #64ffda;
+            font-weight: 600;
+        }
+
+        .chart-container {
+            height: 150px;
+            margin-top: 10px;
+        }
+
+        .processing-queue {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+        }
+
+        .job-card {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(100, 255, 218, 0.2);
+            border-radius: 8px;
+            padding: 15px;
+            transition: all 0.3s ease;
+        }
+
+        .job-card:hover {
+            border-color: #64ffda;
+            transform: translateY(-2px);
+        }
+
+        .job-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+
+        .job-id {
+            font-size: 0.9rem;
+            color: #64ffda;
+            font-weight: 600;
+        }
+
+        .job-status {
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-size: 0.8rem;
+            font-weight: 600;
+        }
+
+        .status-processing {
+            background: rgba(255, 193, 7, 0.2);
+            color: #ffc107;
+        }
+
+        .status-completed {
+            background: rgba(16, 185, 129, 0.2);
+            color: #10b981;
+        }
+
+        .status-failed {
+            background: rgba(239, 68, 68, 0.2);
+            color: #ef4444;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 6px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 3px;
+            overflow: hidden;
+            margin: 10px 0;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #64ffda, #00d4ff);
+            border-radius: 3px;
+            transition: width 0.3s ease;
+        }
+
+        .visualization-overlay {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            background: rgba(0, 0, 0, 0.7);
+            padding: 15px;
+            border-radius: 8px;
+            backdrop-filter: blur(10px);
+            z-index: 100;
+        }
+
+        .overlay-metric {
+            margin-bottom: 5px;
+            font-size: 0.9rem;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .fade-in {
+            animation: fadeIn 0.5s ease-out;
+        }
+
+        .tooltip {
+            position: absolute;
+            background: rgba(0, 0, 0, 0.8);
+            color: white;
+            padding: 8px 12px;
+            border-radius: 6px;
+            font-size: 0.8rem;
+            pointer-events: none;
+            z-index: 1000;
+            backdrop-filter: blur(10px);
+        }
+
+        .model-selector {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 5px;
+            margin: 10px 0;
+        }
+
+        .model-option {
+            padding: 8px;
+            text-align: center;
+            background: rgba(100, 255, 218, 0.1);
+            border: 1px solid rgba(100, 255, 218, 0.3);
+            border-radius: 6px;
+            font-size: 0.8rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .model-option.active {
+            background: rgba(100, 255, 218, 0.3);
+            border-color: #64ffda;
+        }
+
+        .model-option:hover {
+            background: rgba(100, 255, 218, 0.2);
+        }
+
+        .loading-spinner {
+            width: 20px;
+            height: 20px;
+            border: 2px solid rgba(100, 255, 218, 0.3);
+            border-top: 2px solid #64ffda;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-right: 10px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <div class="visualization-container">
+        <!-- Header -->
+        <header class="header">
+            <div class="logo">🌍 GeoAI Live Visualization</div>
+            <div class="status-indicators">
+                <div class="status-item">
+                    <div class="status-dot" id="ml-status"></div>
+                    <span>ML Engine</span>
+                </div>
+                <div class="status-item">
+                    <div class="status-dot" id="stream-status"></div>
+                    <span>Live Stream</span>
+                </div>
+                <div class="status-item">
+                    <div class="status-dot" id="db-status"></div>
+                    <span>Database</span>
+                </div>
+                <div class="status-item">
+                    <span id="fps-counter">60 FPS</span>
+                </div>
+            </div>
+        </header>
+
+        <!-- Main 3D Visualization -->
+        <main class="main-visualization" id="main-canvas">
+            <div class="visualization-overlay">
+                <div class="overlay-metric">🏢 Buildings Detected: <span id="total-buildings">0</span></div>
+                <div class="overlay-metric">⚡ Processing: <span id="active-jobs">0</span> jobs</div>
+                <div class="overlay-metric">📊 Accuracy: <span id="avg-accuracy">0%</span></div>
+                <div class="overlay-metric">🎯 Model: <span id="current-model">Mask R-CNN</span></div>
+            </div>
+        </main>
+
+        <!-- Control Panel -->
+        <aside class="sidebar">
+            <div class="control-panel">
+                <h3 class="panel-title">🎮 Controls</h3>
+                
+                <div class="model-selector">
+                    <div class="model-option active" data-model="mask_rcnn">Mask R-CNN</div>
+                    <div class="model-option" data-model="adaptive_fusion">Adaptive</div>
+                    <div class="model-option" data-model="hybrid">Hybrid</div>
+                </div>
+
+                <button class="control-button" onclick="startLiveProcessing()">
+                    🚀 Start Live Processing
+                </button>
+                <button class="control-button secondary" onclick="pauseProcessing()">
+                    ⏸️ Pause Processing
+                </button>
+                <button class="control-button secondary" onclick="resetVisualization()">
+                    🔄 Reset View
+                </button>
+                <button class="control-button secondary" onclick="toggleGlobeMode()">
+                    🌍 Globe Mode
+                </button>
+                <button class="control-button secondary" onclick="exportResults()">
+                    💾 Export Data
+                </button>
+            </div>
+
+            <!-- Metrics Panel -->
+            <div class="metrics-panel">
+                <h3 class="panel-title">📈 Live Metrics</h3>
+                <div class="metric-item">
+                    <span>Processing Speed</span>
+                    <span class="metric-value" id="processing-speed">0 img/s</span>
+                </div>
+                <div class="metric-item">
+                    <span>Success Rate</span>
+                    <span class="metric-value" id="success-rate">100%</span>
+                </div>
+                <div class="metric-item">
+                    <span>Avg Processing Time</span>
+                    <span class="metric-value" id="avg-time">0.0s</span>
+                </div>
+                <div class="metric-item">
+                    <span>Memory Usage</span>
+                    <span class="metric-value" id="memory-usage">0 MB</span>
+                </div>
+                
+                <div class="chart-container">
+                    <canvas id="performance-chart"></canvas>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Processing Queue -->
+        <section class="bottom-panel">
+            <h3 class="panel-title">⚙️ Live Processing Queue</h3>
+            <div class="processing-queue" id="processing-queue">
+                <!-- Job cards will be populated here -->
+            </div>
+        </section>
+    </div>
+
+    <script>
+        // Global variables
+        let scene, camera, renderer, controls;
+        let buildingGroup, particleSystem;
+        let isProcessing = false;
+        let currentModel = 'mask_rcnn';
+        let jobs = new Map();
+        let performanceChart;
+        let frameCount = 0;
+        let lastTime = Date.now();
+        
+        // Configuration
+        const API_BASE = 'http://127.0.0.1:8002';
+        const WS_URL = 'ws://127.0.0.1:8002/ws';
+        
+        // Statistics
+        const stats = {
+            totalBuildings: 0,
+            activeJobs: 0,
+            processingSpeed: 0,
+            successRate: 100,
+            avgTime: 0,
+            memoryUsage: 0
+        };
+
+        // Initialize the visualization
+        document.addEventListener('DOMContentLoaded', function() {
+            initializeVisualization();
+            initializeCharts();
+            setupEventListeners();
+            startStatusMonitoring();
+            connectWebSocket();
+        });
+
+        // 3D Visualization Setup
+        function initializeVisualization() {
+            const container = document.getElementById('main-canvas');
+            
+            // Scene setup
+            scene = new THREE.Scene();
+            scene.background = new THREE.Color(0x0a0a0a);
+            
+            // Camera setup
+            camera = new THREE.PerspectiveCamera(75, container.clientWidth / container.clientHeight, 0.1, 1000);
+            camera.position.set(0, 50, 100);
+            
+            // Renderer setup
+            renderer = new THREE.WebGLRenderer({ antialias: true });
+            renderer.setSize(container.clientWidth, container.clientHeight);
+            renderer.shadowMap.enabled = true;
+            renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+            container.appendChild(renderer.domElement);
+            
+            // Controls
+            controls = new THREE.OrbitControls(camera, renderer.domElement);
+            controls.enableDamping = true;
+            controls.dampingFactor = 0.05;
+            
+            // Lighting
+            const ambientLight = new THREE.AmbientLight(0x404040, 0.4);
+            scene.add(ambientLight);
+            
+            const directionalLight = new THREE.DirectionalLight(0x64ffda, 0.8);
+            directionalLight.position.set(50, 100, 50);
+            directionalLight.castShadow = true;
+            scene.add(directionalLight);
+            
+            // Grid
+            const gridHelper = new THREE.GridHelper(200, 50, 0x64ffda, 0x333333);
+            scene.add(gridHelper);
+            
+            // Building group
+            buildingGroup = new THREE.Group();
+            scene.add(buildingGroup);
+            
+            // Particle system
+            createParticleSystem();
+            
+            // Start animation loop
+            animate();
+            
+            // Handle window resize
+            window.addEventListener('resize', onWindowResize);
+        }
+
+        function createParticleSystem() {
+            const particleCount = 1000;
+            const particles = new THREE.BufferGeometry();
+            const positions = new Float32Array(particleCount * 3);
+            
+            for (let i = 0; i < particleCount * 3; i += 3) {
+                positions[i] = (Math.random() - 0.5) * 200;
+                positions[i + 1] = Math.random() * 100;
+                positions[i + 2] = (Math.random() - 0.5) * 200;
+            }
+            
+            particles.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+            
+            const particleMaterial = new THREE.PointsMaterial({
+                color: 0x64ffda,
+                size: 0.5,
+                transparent: true,
+                opacity: 0.6
+            });
+            
+            particleSystem = new THREE.Points(particles, particleMaterial);
+            scene.add(particleSystem);
+        }
+
+        function addBuilding(x, z, height, confidence) {
+            const geometry = new THREE.BoxGeometry(2, height, 2);
+            const material = new THREE.MeshLambertMaterial({
+                color: new THREE.Color().setHSL((confidence - 0.5) * 0.3, 0.8, 0.6)
+            });
+            
+            const building = new THREE.Mesh(geometry, material);
+            building.position.set(x, height / 2, z);
+            building.castShadow = true;
+            building.receiveShadow = true;
+            
+            // Add glow effect for high confidence buildings
+            if (confidence > 0.9) {
+                const glowGeometry = new THREE.BoxGeometry(2.2, height + 0.2, 2.2);
+                const glowMaterial = new THREE.MeshBasicMaterial({
+                    color: 0x64ffda,
+                    transparent: true,
+                    opacity: 0.3
+                });
+                const glow = new THREE.Mesh(glowGeometry, glowMaterial);
+                glow.position.copy(building.position);
+                buildingGroup.add(glow);
+            }
+            
+            buildingGroup.add(building);
+            
+            // Animate building appearance
+            building.scale.y = 0;
+            const targetScale = { y: 1 };
+            animateProperty(building.scale, targetScale, 1000);
+        }
+
+        function animateProperty(object, target, duration) {
+            const start = { ...object };
+            const startTime = Date.now();
+            
+            function update() {
+                const elapsed = Date.now() - startTime;
+                const progress = Math.min(elapsed / duration, 1);
+                
+                for (const key in target) {
+                    object[key] = start[key] + (target[key] - start[key]) * easeOutCubic(progress);
+                }
+                
+                if (progress < 1) {
+                    requestAnimationFrame(update);
+                }
+            }
+            
+            update();
+        }
+
+        function easeOutCubic(t) {
+            return 1 - Math.pow(1 - t, 3);
+        }
+
+        function animate() {
+            requestAnimationFrame(animate);
+            
+            // Update controls
+            controls.update();
+            
+            // Animate particles
+            if (particleSystem) {
+                particleSystem.rotation.y += 0.001;
+                const positions = particleSystem.geometry.attributes.position.array;
+                for (let i = 1; i < positions.length; i += 3) {
+                    positions[i] += Math.sin(Date.now() * 0.001 + positions[i]) * 0.01;
+                }
+                particleSystem.geometry.attributes.position.needsUpdate = true;
+            }
+            
+            // Render scene
+            renderer.render(scene, camera);
+            
+            // Update FPS counter
+            frameCount++;
+            if (frameCount % 60 === 0) {
+                const now = Date.now();
+                const fps = Math.round(60000 / (now - lastTime));
+                document.getElementById('fps-counter').textContent = `${fps} FPS`;
+                lastTime = now;
+            }
+        }
+
+        function onWindowResize() {
+            const container = document.getElementById('main-canvas');
+            camera.aspect = container.clientWidth / container.clientHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(container.clientWidth, container.clientHeight);
+        }
+
+        // Chart initialization
+        function initializeCharts() {
+            const ctx = document.getElementById('performance-chart').getContext('2d');
+            
+            performanceChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: [],
+                    datasets: [{
+                        label: 'Processing Speed',
+                        data: [],
+                        borderColor: '#64ffda',
+                        backgroundColor: 'rgba(100, 255, 218, 0.1)',
+                        tension: 0.4,
+                        fill: true
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: false
+                        }
+                    },
+                    scales: {
+                        x: {
+                            display: false
+                        },
+                        y: {
+                            beginAtZero: true,
+                            grid: {
+                                color: 'rgba(100, 255, 218, 0.1)'
+                            },
+                            ticks: {
+                                color: '#64ffda'
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        // WebSocket connection for live updates
+        function connectWebSocket() {
+            try {
+                // For demo purposes, we'll simulate WebSocket updates
+                simulateRealTimeUpdates();
+            } catch (error) {
+                console.log('WebSocket not available, using polling instead');
+                startPolling();
+            }
+        }
+
+        function simulateRealTimeUpdates() {
+            setInterval(() => {
+                // Simulate incoming building detection results
+                if (isProcessing) {
+                    const confidence = 0.7 + Math.random() * 0.3;
+                    const x = (Math.random() - 0.5) * 100;
+                    const z = (Math.random() - 0.5) * 100;
+                    const height = 5 + Math.random() * 20;
+                    
+                    addBuilding(x, z, height, confidence);
+                    stats.totalBuildings++;
+                    
+                    updateMetrics();
+                }
+            }, 2000 + Math.random() * 3000);
+        }
+
+        // Control functions
+        async function startLiveProcessing() {
+            isProcessing = true;
+            updateStatus('stream-status', true);
+            
+            // Create a demo job
+            try {
+                const response = await axios.post(`${API_BASE}/api/v1/ml-processing/extract-buildings`, {
+                    image_url: 'https://example.com/live-stream.jpg',
+                    model_type: currentModel,
+                    apply_regularization: true
+                });
+                
+                if (response.data.job_id) {
+                    monitorJob(response.data.job_id);
+                }
+            } catch (error) {
+                console.log('Starting demo processing mode');
+                simulateDemoJob();
+            }
+        }
+
+        function pauseProcessing() {
+            isProcessing = false;
+            updateStatus('stream-status', false);
+        }
+
+        function resetVisualization() {
+            // Clear all buildings
+            while (buildingGroup.children.length > 0) {
+                buildingGroup.remove(buildingGroup.children[0]);
+            }
+            
+            // Reset camera
+            camera.position.set(0, 50, 100);
+            controls.reset();
+            
+            // Reset stats
+            stats.totalBuildings = 0;
+            updateMetrics();
+        }
+
+        function toggleGlobeMode() {
+            // Toggle between flat and globe view
+            if (camera.position.y > 100) {
+                camera.position.set(0, 50, 100);
+            } else {
+                camera.position.set(0, 200, 200);
+            }
+        }
+
+        function exportResults() {
+            const data = {
+                timestamp: new Date().toISOString(),
+                stats: stats,
+                buildings: buildingGroup.children.length,
+                model: currentModel
+            };
+            
+            const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `geoai-results-${Date.now()}.json`;
+            a.click();
+        }
+
+        // Event listeners
+        function setupEventListeners() {
+            // Model selector
+            document.querySelectorAll('.model-option').forEach(option => {
+                option.addEventListener('click', function() {
+                    document.querySelector('.model-option.active').classList.remove('active');
+                    this.classList.add('active');
+                    currentModel = this.dataset.model;
+                    document.getElementById('current-model').textContent = this.textContent;
+                });
+            });
+        }
+
+        // Status monitoring
+        function startStatusMonitoring() {
+            setInterval(checkSystemStatus, 5000);
+            checkSystemStatus(); // Initial check
+        }
+
+        async function checkSystemStatus() {
+            try {
+                const response = await axios.get(`${API_BASE}/health`);
+                updateStatus('ml-status', response.status === 200);
+                updateStatus('db-status', response.data.features?.redis_caching || false);
+            } catch (error) {
+                updateStatus('ml-status', false);
+                updateStatus('db-status', false);
+            }
+        }
+
+        function updateStatus(elementId, isOnline) {
+            const element = document.getElementById(elementId);
+            if (isOnline) {
+                element.classList.remove('status-offline');
+            } else {
+                element.classList.add('status-offline');
+            }
+        }
+
+        // Job monitoring
+        async function monitorJob(jobId) {
+            const jobCard = createJobCard(jobId);
+            
+            const pollJob = async () => {
+                try {
+                    const response = await axios.get(`${API_BASE}/api/v1/jobs/${jobId}`);
+                    const job = response.data;
+                    
+                    updateJobCard(jobCard, job);
+                    
+                    if (job.status === 'completed') {
+                        processJobResults(job.results);
+                    } else if (job.status !== 'failed') {
+                        setTimeout(pollJob, 1000);
+                    }
+                } catch (error) {
+                    updateJobCard(jobCard, { status: 'failed', error: 'Connection lost' });
+                }
+            };
+            
+            pollJob();
+        }
+
+        function createJobCard(jobId) {
+            const card = document.createElement('div');
+            card.className = 'job-card fade-in';
+            card.innerHTML = `
+                <div class="job-header">
+                    <div class="job-id">${jobId.substring(0, 8)}...</div>
+                    <div class="job-status status-processing">Processing</div>
+                </div>
+                <div class="progress-bar">
+                    <div class="progress-fill" style="width: 0%"></div>
+                </div>
+                <div class="job-details">Initializing...</div>
+            `;
+            
+            document.getElementById('processing-queue').appendChild(card);
+            stats.activeJobs++;
+            updateMetrics();
+            
+            return card;
+        }
+
+        function updateJobCard(card, job) {
+            const statusElement = card.querySelector('.job-status');
+            const progressElement = card.querySelector('.progress-fill');
+            const detailsElement = card.querySelector('.job-details');
+            
+            statusElement.textContent = job.status;
+            statusElement.className = `job-status status-${job.status}`;
+            
+            progressElement.style.width = `${job.progress || 0}%`;
+            detailsElement.textContent = job.current_stage || job.error || 'Processing...';
+            
+            if (job.status === 'completed' || job.status === 'failed') {
+                stats.activeJobs--;
+                setTimeout(() => card.remove(), 5000);
+            }
+        }
+
+        function processJobResults(results) {
+            if (results && results.buildings_detected) {
+                // Add buildings based on results
+                for (let i = 0; i < results.buildings_detected; i++) {
+                    setTimeout(() => {
+                        const confidence = 0.7 + Math.random() * 0.3;
+                        const x = (Math.random() - 0.5) * 100;
+                        const z = (Math.random() - 0.5) * 100;
+                        const height = 5 + Math.random() * 20;
+                        
+                        addBuilding(x, z, height, confidence);
+                    }, i * 100);
+                }
+                
+                stats.totalBuildings += results.buildings_detected;
+                stats.avgTime = results.processing_time || stats.avgTime;
+                updateMetrics();
+            }
+        }
+
+        function simulateDemoJob() {
+            const demoJobId = 'demo-' + Date.now();
+            const jobCard = createJobCard(demoJobId);
+            
+            let progress = 0;
+            const progressInterval = setInterval(() => {
+                progress += 10 + Math.random() * 20;
+                progress = Math.min(progress, 100);
+                
+                updateJobCard(jobCard, {
+                    status: progress >= 100 ? 'completed' : 'processing',
+                    progress: progress,
+                    current_stage: progress >= 100 ? 'Complete' : `Processing... ${Math.floor(progress)}%`
+                });
+                
+                if (progress >= 100) {
+                    clearInterval(progressInterval);
+                    processJobResults({
+                        buildings_detected: 5 + Math.floor(Math.random() * 15),
+                        processing_time: 2 + Math.random() * 3
+                    });
+                }
+            }, 500);
+        }
+
+        // Update metrics display
+        function updateMetrics() {
+            document.getElementById('total-buildings').textContent = stats.totalBuildings;
+            document.getElementById('active-jobs').textContent = stats.activeJobs;
+            document.getElementById('processing-speed').textContent = stats.processingSpeed.toFixed(1) + ' img/s';
+            document.getElementById('success-rate').textContent = stats.successRate.toFixed(0) + '%';
+            document.getElementById('avg-time').textContent = stats.avgTime.toFixed(1) + 's';
+            document.getElementById('avg-accuracy').textContent = stats.successRate.toFixed(0) + '%';
+            
+            // Update chart
+            const now = new Date().toLocaleTimeString();
+            performanceChart.data.labels.push(now);
+            performanceChart.data.datasets[0].data.push(stats.processingSpeed);
+            
+            if (performanceChart.data.labels.length > 20) {
+                performanceChart.data.labels.shift();
+                performanceChart.data.datasets[0].data.shift();
+            }
+            
+            performanceChart.update('none');
+            
+            // Simulate metrics updates
+            stats.processingSpeed = 0.5 + Math.random() * 2;
+            stats.memoryUsage = 150 + Math.random() * 100;
+            document.getElementById('memory-usage').textContent = Math.floor(stats.memoryUsage) + ' MB';
+        }
+
+        // Start demo mode
+        setTimeout(() => {
+            startLiveProcessing();
+        }, 2000);
+    </script>
+</body>
+</html>
