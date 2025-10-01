@@ -1,0 +1,72 @@
+FROM python:3.11-slim
+
+WORKDIR /app
+
+# Install system dependencies
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends \
+        build-essential \
+        libglib2.0-0 \
+        libsm6 \
+        libxext6 \
+        libxrender-dev \
+        libgl1-mesa-glx \
+        curl \
+        git && \
+    apt-get clean && \
+    rm -rf /var/lib/apt/lists/*
+
+# Install GeoAI library dependencies
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+
+# Install additional geospatial libraries
+RUN pip install --no-cache-dir \
+    rasterio \
+    geopandas \
+    pyproj \
+    folium \
+    rtree \
+    shapely \
+    pysal \
+    mapclassify \
+    descartes \
+    geopy \
+    osmnx \
+    contextily \
+    mercantile \
+    mapbox \
+    leafmap \
+    pydeck \
+    xyzservices \
+    prometheus-client \
+    fastapi-prometheus-exporter
+
+# Copy application code
+COPY src/ ./src/
+COPY models/ ./models/
+
+# Create directories for data
+RUN mkdir -p data outputs cache
+
+# Create health check endpoint file
+RUN echo 'from fastapi import FastAPI, HTTPException\nfrom fastapi.middleware.cors import CORSMiddleware\nimport uvicorn\nimport sys\nimport os\n\nsys.path.append(".")\nfrom src.open_source_geo_ai import OpenSourceGeoAI\n\napp = FastAPI(title="GeoAI Engine API", description="Live USA GeoAI map visualization engine")\n\napp.add_middleware(\n    CORSMiddleware,\n    allow_origins=["*"],\n    allow_credentials=True,\n    allow_methods=["*"],\n    allow_headers=["*"],\n)\n\n@app.get("/health")\nasync def health_check():\n    """Health check endpoint"""\n    return {"status": "healthy"}\n\n@app.get("/")\nasync def root():\n    """API root endpoint"""\n    return {\n        "message": "GeoAI Engine API is running",\n        "version": "1.0.0",\n        "status": "online",\n        "docs_url": "/docs"\n    }\n\n# Initialize GeoAI on server startup\ngeoai_client = None\n\n@app.on_event("startup")\nasync def startup_event():\n    """Initialize GeoAI client on startup"""\n    global geoai_client\n    try:\n        geoai_client = OpenSourceGeoAI()\n    except Exception as e:\n        print(f"Error initializing GeoAI client: {e}")\n\nif __name__ == "__main__":\n    port = int(os.environ.get("API_PORT", 8003))\n    host = os.environ.get("API_HOST", "0.0.0.0")\n    uvicorn.run(app, host=host, port=port)\n' > geoai_api.py
+
+# Create entrypoint script
+RUN echo '#!/bin/bash\necho "Starting GeoAI Engine API..."\npython geoai_api.py\n' > entrypoint.sh && \
+    chmod +x entrypoint.sh
+
+# Set environment variables
+ENV PYTHONUNBUFFERED=1
+ENV PYTHONDONTWRITEBYTECODE=1
+ENV TILE_SERVER_URL=https://services.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile
+ENV MAX_CACHE_SIZE=4096
+ENV ENABLE_ADVANCED_VISUALIZATIONS=true
+ENV API_PORT=8003
+ENV API_HOST=0.0.0.0
+
+# Expose API port
+EXPOSE 8003
+
+# Set entrypoint
+ENTRYPOINT ["./entrypoint.sh"]

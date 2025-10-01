@@ -1,0 +1,158 @@
+name: "🌾 USA GeoAI Agricultural Detection CI/CD Pipeline"
+
+on:
+  push:
+    branches: [ main ]
+    tags: [ 'v*' ]
+  pull_request:
+    branches: [ main ]
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME_PREFIX: ${{ github.repository_owner }}/geoai-agriculture
+  PYTHON_VERSION: '3.11'
+  NODE_VERSION: '18'
+
+jobs:
+  # Test Python code
+  test:
+    name: 🧪 Test Python Code
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: 📥 Checkout Repository
+      uses: actions/checkout@v4
+      
+    - name: 🐍 Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: ${{ env.PYTHON_VERSION }}
+        cache: 'pip'
+        
+    - name: 📦 Install Dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+        pip install pytest pytest-cov black flake8
+        
+    - name: 🧹 Lint with flake8
+      run: |
+        flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
+        
+    - name: 🧪 Test with pytest
+      run: |
+        pytest tests/ --cov=src
+
+  # Build and push Docker images
+  build:
+    name: 🐳 Build & Push Container Images
+    runs-on: ubuntu-latest
+    needs: test
+    if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/v'))
+    
+    permissions:
+      contents: read
+      packages: write
+      
+    strategy:
+      matrix:
+        include:
+          - image: backend
+            dockerfile: docker/Dockerfile.api
+            context: .
+          - image: frontend
+            dockerfile: docker/Dockerfile.frontend
+            context: .
+          - image: geoai-engine
+            dockerfile: docker/Dockerfile.geoai-engine
+            context: .
+          - image: streamlit
+            dockerfile: docker/Dockerfile.streamlit
+            context: .
+            
+    steps:
+      - name: 📥 Checkout repository
+        uses: actions/checkout@v4
+        
+      - name: 🔑 Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+          
+      - name: ⚙️ Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+        
+      - name: 🏷️ Extract metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME_PREFIX }}-${{ matrix.image }}
+          tags: |
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            type=sha,format=long
+            type=ref,event=branch
+            type=raw,value=latest,enable=${{ github.ref == 'refs/heads/main' }}
+            
+      - name: 🛠️ Build and push
+        uses: docker/build-push-action@v5
+        with:
+          context: ${{ matrix.context }}
+          file: ${{ matrix.dockerfile }}
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  # Deploy to production
+  deploy:
+    name: 🚀 Deploy to Production
+    runs-on: ubuntu-latest
+    needs: build
+    if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/v'))
+    
+    steps:
+      - name: 📥 Checkout repository
+        uses: actions/checkout@v4
+        
+      - name: 📄 Generate docker-compose file
+        run: |
+          # Make directory for deployment
+          mkdir -p deployment
+          
+          # Copy docker-compose.geoai-enhanced.yml to deployment directory
+          cp docker-compose.geoai-enhanced.yml deployment/docker-compose.yml
+          
+          # Replace image references with GitHub Container Registry paths
+          sed -i 's|build:|image: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME_PREFIX }}-backend:latest\n    # build:|g' deployment/docker-compose.yml
+          sed -i 's|dockerfile: docker/Dockerfile.api|# dockerfile: docker/Dockerfile.api|g' deployment/docker-compose.yml
+          
+          sed -i 's|build:|image: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME_PREFIX }}-geoai-engine:latest\n    # build:|g' deployment/docker-compose.yml
+          sed -i 's|dockerfile: docker/Dockerfile.geoai-engine|# dockerfile: docker/Dockerfile.geoai-engine|g' deployment/docker-compose.yml
+          
+          sed -i 's|build:|image: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME_PREFIX }}-frontend:latest\n    # build:|g' deployment/docker-compose.yml
+          sed -i 's|dockerfile: docker/Dockerfile.frontend|# dockerfile: docker/Dockerfile.frontend|g' deployment/docker-compose.yml
+          
+          sed -i 's|build:|image: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME_PREFIX }}-streamlit:latest\n    # build:|g' deployment/docker-compose.yml
+          sed -i 's|dockerfile: docker/Dockerfile.streamlit|# dockerfile: docker/Dockerfile.streamlit|g' deployment/docker-compose.yml
+          
+      - name: 📦 Upload deployment artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: deployment-files
+          path: |
+            deployment/
+            run_docker_deployment.py
+            
+      # For a real deployment, you would use SSH to deploy to your server
+      # or a cloud provider's deployment service. This is a placeholder.
+      - name: 🚀 Deploy to server (placeholder)
+        run: |
+          echo "Deploying to production server..."
+          echo "In a real scenario, you would:"
+          echo "1. Use SSH to connect to your server"
+          echo "2. Transfer the deployment files"
+          echo "3. Run docker-compose up -d to start the services"

@@ -1,0 +1,239 @@
+version: '3.8'
+
+services:
+  # Redis Database for caching and messaging
+  redis:
+    image: redis:7.2-alpine
+    container_name: geoai-redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - geoai-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+
+  # FastAPI Backend ML Server
+  backend:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.api
+      args:
+        - USE_GPU=${USE_GPU:-false}
+    container_name: geoai-backend
+    restart: unless-stopped
+    ports:
+      - "8002:8002"
+    environment:
+      - REDIS_URL=redis://redis:6379
+      - ENVIRONMENT=production
+      - API_HOST=0.0.0.0
+      - API_PORT=8002
+      - FRONTEND_URL=http://frontend:3000
+      - TELEMETRY_ENABLED=true
+      - MONITORING_INTERVAL=60
+    volumes:
+      - ./data:/app/data
+      - ./outputs:/app/outputs
+      - ./models:/app/models
+    networks:
+      - geoai-network
+    depends_on:
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8002/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      
+  # GeoAI Engine - Dedicated service for USA map processing and detailed visualizations
+  geoai-engine:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.geoai-engine
+      args:
+        - USE_GPU=${USE_GPU:-false}
+    container_name: geoai-engine
+    restart: unless-stopped
+    ports:
+      - "8003:8003"
+    environment:
+      - REDIS_URL=redis://redis:6379
+      - API_HOST=0.0.0.0
+      - API_PORT=8003
+      - TILE_SERVER_URL=https://services.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile
+      - MAX_CACHE_SIZE=4096
+      - ENABLE_ADVANCED_VISUALIZATIONS=true
+    volumes:
+      - ./data:/app/data
+      - ./outputs:/app/outputs
+      - ./models:/app/models
+      - geoai_cache:/app/cache
+    networks:
+      - geoai-network
+    depends_on:
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8003/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Frontend 3D Interface
+  frontend:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.frontend
+    container_name: geoai-frontend
+    restart: unless-stopped
+    ports:
+      - "3000:80"
+    environment:
+      - REACT_APP_API_URL=http://backend:8002
+      - REACT_APP_GEOAI_URL=http://geoai-engine:8003
+      - REACT_APP_MONITORING_URL=http://monitoring:9090
+      - REACT_APP_STREAMLIT_URL=http://streamlit:8501
+      - NODE_ENV=production
+      - ENABLE_LIVE_MAPS=true
+      - MAP_UPDATE_INTERVAL=30000
+    networks:
+      - geoai-network
+    depends_on:
+      backend:
+        condition: service_healthy
+      geoai-engine:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:80/health.html"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Streamlit Dashboard
+  streamlit:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.streamlit
+    container_name: geoai-streamlit
+    restart: unless-stopped
+    ports:
+      - "8501:8501"
+    environment:
+      - BACKEND_URL=http://backend:8002
+      - GEOAI_URL=http://geoai-engine:8003
+      - STREAMLIT_SERVER_PORT=8501
+      - STREAMLIT_SERVER_ADDRESS=0.0.0.0
+      - STREAMLIT_BROWSER_GATHER_USAGE_STATS=false
+      - STREAMLIT_THEME_PRIMARY_COLOR=#1E88E5
+    volumes:
+      - ./data:/app/data
+      - ./outputs:/app/outputs
+    networks:
+      - geoai-network
+    depends_on:
+      backend:
+        condition: service_healthy
+      geoai-engine:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8501/healthz"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      
+  # Prometheus Monitoring
+  monitoring:
+    image: prom/prometheus:v2.45.0
+    container_name: geoai-monitoring
+    restart: unless-stopped
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml
+      - prometheus_data:/prometheus
+    networks:
+      - geoai-network
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.console.libraries=/usr/share/prometheus/console_libraries'
+      - '--web.console.templates=/usr/share/prometheus/consoles'
+      - '--web.enable-lifecycle'
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "http://localhost:9090/-/healthy"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      
+  # Grafana Dashboard
+  grafana:
+    image: grafana/grafana:10.0.3
+    container_name: geoai-grafana
+    restart: unless-stopped
+    ports:
+      - "3001:3000"
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=admin_password
+      - GF_USERS_ALLOW_SIGN_UP=false
+      - GF_INSTALL_PLUGINS=grafana-piechart-panel,grafana-worldmap-panel
+    volumes:
+      - ./monitoring/grafana/provisioning:/etc/grafana/provisioning
+      - ./monitoring/grafana/dashboards:/var/lib/grafana/dashboards
+      - grafana_data:/var/lib/grafana
+    networks:
+      - geoai-network
+    depends_on:
+      monitoring:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "http://localhost:3000/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Nginx Reverse Proxy
+  nginx:
+    image: nginx:alpine
+    container_name: geoai-nginx
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx/conf/nginx.conf:/etc/nginx/nginx.conf
+      - ./nginx/conf/geoai.conf:/etc/nginx/conf.d/default.conf
+      - ./nginx/certs:/etc/nginx/certs
+      - ./nginx/logs:/var/log/nginx
+    networks:
+      - geoai-network
+    depends_on:
+      frontend:
+        condition: service_healthy
+      backend:
+        condition: service_healthy
+      streamlit:
+        condition: service_healthy
+      grafana:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "http://localhost:80/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+volumes:
+  redis_data:
+  prometheus_data:
+  grafana_data:
+  geoai_cache:
+
+networks:
+  geoai-network:
+    driver: bridge
