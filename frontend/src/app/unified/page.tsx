@@ -1,7 +1,7 @@
-import CombinedDashboard from '../../components/CombinedDashboard';
+import InteractiveDashboard from '../../components/InteractiveDashboard';
 
 export default function Dashboard() {
-  return <CombinedDashboard />;
+  return <InteractiveDashboard />;
 }
 
 export const metadata = {

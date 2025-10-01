@@ -1,0 +1,66 @@
+# GeoAI Building Footprint Detection Backend Requirements
+
+# Core Framework
+fastapi==0.104.1
+uvicorn[standard]==0.24.0
+pydantic==2.4.2
+
+# API & Web
+starlette==0.27.0
+python-multipart==0.0.6
+python-jose[cryptography]==3.3.0
+passlib[bcrypt]==1.7.4
+
+# Data Science & ML
+numpy==1.24.3
+pandas==2.0.3
+scikit-learn==1.3.0
+opencv-python==4.8.1.78
+Pillow==10.0.1
+
+# Database & Storage  
+sqlalchemy==2.0.21
+alembic==1.12.0
+psycopg2-binary==2.9.7
+redis==4.6.0
+
+# HTTP & Networking
+httpx==0.25.0
+aiohttp==3.8.6
+requests==2.31.0
+
+# Logging & Monitoring
+loguru==0.7.2
+prometheus-client==0.17.1
+
+# Configuration & Environment
+python-dotenv==1.0.0
+pyyaml==6.0.1
+
+# Testing
+pytest==7.4.2
+pytest-asyncio==0.21.1
+httpx==0.25.0
+
+# Production
+gunicorn==21.2.0
+supervisor==4.2.5
+
+# Geographic & Mapping
+geopy==2.4.0
+folium==0.14.0
+
+# Image Processing Alternatives (for cloud environments)
+imageio==2.31.5
+matplotlib==3.7.2
+scipy==1.11.3
+
+# Async & Concurrency
+asyncio-mqtt==0.13.0
+aiocache==0.12.2
+
+# Utilities
+python-dateutil==2.8.2
+click==8.1.7
+rich==13.6.0
+typer==0.9.0
