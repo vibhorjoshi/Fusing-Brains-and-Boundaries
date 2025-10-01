@@ -1,0 +1,59 @@
+# Adaptive Fusion RL Agent Service Dockerfile
+# Stage 4 of Original Architecture Pipeline - Core Adaptive Fusion with RL
+
+FROM python:3.11-slim
+
+WORKDIR /app
+
+# Install system dependencies
+RUN apt-get update && apt-get install -y \
+    gcc \
+    g++ \
+    curl \
+    libgl1-mesa-glx \
+    libglib2.0-0 \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install Python dependencies for Adaptive Fusion RL
+RUN pip install --no-cache-dir \
+    fastapi \
+    uvicorn[standard] \
+    redis \
+    numpy \
+    scipy \
+    tensorflow \
+    torch \
+    gymnasium \
+    stable-baselines3 \
+    scikit-learn \
+    matplotlib \
+    plotly \
+    networkx
+
+# Copy Adaptive Fusion module
+COPY src/adaptive_fusion/ ./adaptive_fusion/
+COPY models/ ./models/
+COPY rl_models/ ./rl_models/
+COPY docker/services/adaptive_fusion_service.py .
+
+# Create necessary directories
+RUN mkdir -p /app/data /app/outputs /app/logs /app/models /app/rl_models
+
+# Set environment variables
+ENV PYTHONPATH=/app
+ENV SERVICE_PORT=8011
+ENV REDIS_HOST=redis-live-results
+ENV REDIS_PORT=6379
+ENV RL_LEARNING_RATE=0.0008
+ENV RL_EPSILON=0.05
+ENV RL_GAMMA=0.98
+
+# Expose port
+EXPOSE 8011
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
+    CMD curl -f http://localhost:8011/health || exit 1
+
+# Run the Adaptive Fusion RL service
+CMD ["python", "-m", "uvicorn", "adaptive_fusion_service:app", "--host", "0.0.0.0", "--port", "8011"]

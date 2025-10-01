@@ -1,0 +1,60 @@
+# MaskRCNN Detection Service Dockerfile
+# Stage 2 of Original Architecture Pipeline
+
+FROM python:3.11-slim
+
+WORKDIR /app
+
+# Install system dependencies
+RUN apt-get update && apt-get install -y \
+    gcc \
+    g++ \
+    curl \
+    libgl1-mesa-glx \
+    libglib2.0-0 \
+    libsm6 \
+    libxext6 \
+    libxrender-dev \
+    libgomp1 \
+    wget \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install Python dependencies for MaskRCNN
+RUN pip install --no-cache-dir \
+    fastapi \
+    uvicorn[standard] \
+    redis \
+    torch \
+    torchvision \
+    opencv-python-headless \
+    numpy \
+    scipy \
+    Pillow \
+    matplotlib \
+    pycocotools \
+    detectron2 -f https://dl.fbaipublicfiles.com/detectron2/wheels/cpu/torch1.13/index.html
+
+# Copy MaskRCNN module
+COPY src/maskrcnn/ ./maskrcnn/
+COPY models/ ./models/
+COPY docker/services/maskrcnn_service.py .
+
+# Create necessary directories
+RUN mkdir -p /app/data /app/outputs /app/logs /app/models
+
+# Set environment variables
+ENV PYTHONPATH=/app
+ENV SERVICE_PORT=8009
+ENV REDIS_HOST=redis-live-results
+ENV REDIS_PORT=6379
+ENV GPU_ENABLED=false
+
+# Expose port
+EXPOSE 8009
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
+    CMD curl -f http://localhost:8009/health || exit 1
+
+# Run the MaskRCNN service
+CMD ["python", "-m", "uvicorn", "maskrcnn_service:app", "--host", "0.0.0.0", "--port", "8009"]

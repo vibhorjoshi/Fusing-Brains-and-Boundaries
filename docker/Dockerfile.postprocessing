@@ -1,0 +1,54 @@
+# Post-processing Service Dockerfile
+# Stage 5 of Original Architecture Pipeline - Final Processing and Validation
+
+FROM python:3.11-slim
+
+WORKDIR /app
+
+# Install system dependencies
+RUN apt-get update && apt-get install -y \
+    gcc \
+    g++ \
+    curl \
+    libgl1-mesa-glx \
+    libglib2.0-0 \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install Python dependencies for Post-processing
+RUN pip install --no-cache-dir \
+    fastapi \
+    uvicorn[standard] \
+    redis \
+    numpy \
+    scipy \
+    opencv-python-headless \
+    scikit-image \
+    Pillow \
+    matplotlib \
+    geopy \
+    shapely \
+    rasterio \
+    geopandas
+
+# Copy Post-processing module
+COPY src/postprocessing/ ./postprocessing/
+COPY docker/services/postprocessing_service.py .
+
+# Create necessary directories
+RUN mkdir -p /app/data /app/outputs /app/logs
+
+# Set environment variables
+ENV PYTHONPATH=/app
+ENV SERVICE_PORT=8012
+ENV REDIS_HOST=redis-live-results
+ENV REDIS_PORT=6379
+
+# Expose port
+EXPOSE 8012
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
+    CMD curl -f http://localhost:8012/health || exit 1
+
+# Run the Post-processing service
+CMD ["python", "-m", "uvicorn", "postprocessing_service:app", "--host", "0.0.0.0", "--port", "8012"]

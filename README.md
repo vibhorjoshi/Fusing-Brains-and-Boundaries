@@ -1,13 +1,18 @@
-# 🏗️ Fusing Brains and Boundaries: GPU-Accelerated Building Footprint Extraction
+# 🚀 Real USA Agricultural Detection System
+# Enhanced Adaptive Fusion Algorithm with Original Architecture
 
-[![Streamlit App](https://static.streamlit.io/badges/streamlit_badge_black_white.svg)](https://fusing-brains-boundaries.streamlit.app)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![Python 3.8+](https://img.shields.io/badge/python-3.8+-blue.svg)](https://www.python.org/downloads/)
-[![PyTorch](https://img.shields.io/badge/PyTorch-2.0+-ee4c2c?logo=pytorch&logoColor=white)](https://pytorch.org/)
-[![CUDA](https://img.shields.io/badge/CUDA-11.8+-76B900?logo=nvidia&logoColor=white)](https://developer.nvidia.com/cuda-downloads)
-[![arXiv](https://img.shields.io/badge/arXiv-2409.xxxxx-b31b1b.svg)](https://arxiv.org/abs/2409.xxxxx)
-[![Paper](https://img.shields.io/badge/Paper-IEEE%20Access-blue)](https://ieeexplore.ieee.org/)
-[![GitHub Stars](https://img.shields.io/github/stars/vibhorjoshi/Fusing-Brains-and-Boundaries?style=social)](https://github.com/vibhorjoshi/Fusing-Brains-and-Boundaries)
+[![Python 3.11+](https://img.shields.io/badge/python-3.11+-blue.svg)](https://www.python.org/downloads/)
+[![Docker](https://img.shields.io/badge/Docker-Ready-blue?logo=docker&logoColor=white)](https://www.docker.com/)
+[![FastAPI](https://img.shields.io/badge/FastAPI-0.104+-009688?logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com/)
+[![GitHub Actions](https://img.shields.io/badge/CI%2FCD-GitHub%20Actions-2088FF?logo=github-actions&logoColor=white)](https://github.com/features/actions)
+[![Redis](https://img.shields.io/badge/Redis-Live%20Storage-DC382D?logo=redis&logoColor=white)](https://redis.io/)
+
+## 🌟 System Overview
+
+This is a comprehensive Real USA Agricultural Detection System using our enhanced Adaptive Fusion algorithm with the original architecture pipeline:
+
+**Preprocessing → MaskRCNN → RR RT FER → Adaptive Fusion → Post-processing**
 
 > 🏆 **State-of-the-Art Performance**: 18.7x speedup with 4.98% IoU improvement over CPU implementations
 > 

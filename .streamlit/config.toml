@@ -1,6 +1,3 @@
-[global]
-dataFrameSerialization = "legacy"
-
 [server]
 runOnSave = true
 port = 8501

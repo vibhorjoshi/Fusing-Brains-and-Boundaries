@@ -1,0 +1,1156 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GeoAI Adaptive Fusion - Live World Map Testing</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+            color: white;
+            overflow-x: hidden;
+        }
+
+        .header {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 1000;
+            background: rgba(0, 0, 0, 0.9);
+            backdrop-filter: blur(10px);
+            padding: 10px 20px;
+            border-bottom: 2px solid #00ff88;
+        }
+
+        .header h1 {
+            font-size: 1.5rem;
+            display: inline-block;
+            background: linear-gradient(45deg, #00ff88, #00ccff);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .status-bar {
+            display: inline-block;
+            float: right;
+            margin-top: 5px;
+        }
+
+        .status-indicator {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            margin-left: 10px;
+            animation: pulse 2s infinite;
+        }
+
+        .status-indicator.active {
+            background: #00ff88;
+        }
+
+        .status-indicator.processing {
+            background: #ffaa00;
+        }
+
+        .status-indicator.error {
+            background: #ff4444;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        .main-container {
+            margin-top: 70px;
+            display: grid;
+            grid-template-columns: 300px 1fr 350px;
+            height: calc(100vh - 70px);
+            gap: 10px;
+            padding: 10px;
+        }
+
+        .control-panel {
+            background: rgba(0, 0, 0, 0.8);
+            border-radius: 10px;
+            padding: 20px;
+            overflow-y: auto;
+        }
+
+        .control-section {
+            margin-bottom: 25px;
+            padding: 15px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            border: 1px solid rgba(0, 255, 136, 0.3);
+        }
+
+        .control-section h3 {
+            color: #00ff88;
+            margin-bottom: 15px;
+            font-size: 1.1rem;
+        }
+
+        .btn {
+            background: linear-gradient(45deg, #00ff88, #00ccff);
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: bold;
+            margin: 5px;
+            transition: all 0.3s;
+            width: 100%;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0, 255, 136, 0.4);
+        }
+
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .world-map-container {
+            background: rgba(0, 0, 0, 0.9);
+            border-radius: 10px;
+            position: relative;
+            overflow: hidden;
+            border: 2px solid #00ff88;
+        }
+
+        #worldMap {
+            width: 100%;
+            height: 100%;
+        }
+
+        .metrics-panel {
+            background: rgba(0, 0, 0, 0.8);
+            border-radius: 10px;
+            padding: 20px;
+            overflow-y: auto;
+        }
+
+        .metric-card {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 15px;
+            border: 1px solid rgba(0, 255, 136, 0.3);
+        }
+
+        .metric-card h4 {
+            color: #00ff88;
+            margin-bottom: 10px;
+        }
+
+        .metric-value {
+            font-size: 1.8rem;
+            font-weight: bold;
+            color: #00ccff;
+        }
+
+        .metric-label {
+            font-size: 0.9rem;
+            color: #ccc;
+            margin-top: 5px;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 20px;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 10px;
+            overflow: hidden;
+            margin: 10px 0;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #00ff88, #00ccff);
+            width: 0%;
+            transition: width 0.5s ease;
+            border-radius: 10px;
+        }
+
+        .location-marker {
+            position: absolute;
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            transform: translate(-50%, -50%);
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .location-marker.idle {
+            background: #666;
+            border: 2px solid #999;
+        }
+
+        .location-marker.processing {
+            background: #ffaa00;
+            border: 2px solid #ffcc00;
+            animation: processingPulse 1s infinite;
+        }
+
+        .location-marker.success {
+            background: #00ff88;
+            border: 2px solid #00ccff;
+        }
+
+        .location-marker.error {
+            background: #ff4444;
+            border: 2px solid #ff6666;
+        }
+
+        @keyframes processingPulse {
+            0%, 100% { 
+                transform: translate(-50%, -50%) scale(1); 
+                opacity: 1; 
+            }
+            50% { 
+                transform: translate(-50%, -50%) scale(1.5); 
+                opacity: 0.7; 
+            }
+        }
+
+        .location-tooltip {
+            position: absolute;
+            background: rgba(0, 0, 0, 0.9);
+            color: white;
+            padding: 10px;
+            border-radius: 6px;
+            font-size: 0.8rem;
+            pointer-events: none;
+            z-index: 1000;
+            border: 1px solid #00ff88;
+            max-width: 200px;
+        }
+
+        .rl-stats {
+            background: rgba(0, 255, 136, 0.1);
+            border: 1px solid #00ff88;
+            border-radius: 8px;
+            padding: 15px;
+            margin: 15px 0;
+        }
+
+        .rl-stats h4 {
+            color: #00ff88;
+            margin-bottom: 10px;
+        }
+
+        .rl-stat-item {
+            display: flex;
+            justify-content: space-between;
+            margin: 5px 0;
+            font-size: 0.9rem;
+        }
+
+        .rl-stat-label {
+            color: #ccc;
+        }
+
+        .rl-stat-value {
+            color: #00ccff;
+            font-weight: bold;
+        }
+
+        .console-log {
+            background: rgba(0, 0, 0, 0.9);
+            font-family: 'Courier New', monospace;
+            font-size: 0.8rem;
+            padding: 15px;
+            height: 200px;
+            overflow-y: auto;
+            border: 1px solid #00ff88;
+            border-radius: 8px;
+            margin-top: 15px;
+        }
+
+        .console-line {
+            margin: 2px 0;
+            padding: 2px 0;
+        }
+
+        .console-line.info {
+            color: #00ccff;
+        }
+
+        .console-line.success {
+            color: #00ff88;
+        }
+
+        .console-line.warning {
+            color: #ffaa00;
+        }
+
+        .console-line.error {
+            color: #ff4444;
+        }
+
+        .region-filter {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 5px;
+            margin: 10px 0;
+        }
+
+        .region-btn {
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid #00ff88;
+            color: #00ff88;
+            padding: 5px 10px;
+            border-radius: 15px;
+            font-size: 0.8rem;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .region-btn.active {
+            background: #00ff88;
+            color: black;
+        }
+
+        .region-btn:hover {
+            background: rgba(0, 255, 136, 0.3);
+        }
+
+        .notification {
+            position: fixed;
+            top: 80px;
+            right: 20px;
+            background: rgba(0, 0, 0, 0.9);
+            color: white;
+            padding: 15px 20px;
+            border-radius: 8px;
+            border: 1px solid #00ff88;
+            z-index: 2000;
+            transform: translateX(100%);
+            transition: transform 0.3s ease;
+        }
+
+        .notification.show {
+            transform: translateX(0);
+        }
+
+        .loading-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.8);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-direction: column;
+            z-index: 1000;
+        }
+
+        .loading-spinner {
+            width: 50px;
+            height: 50px;
+            border: 3px solid rgba(0, 255, 136, 0.3);
+            border-top: 3px solid #00ff88;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-bottom: 20px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        @media (max-width: 1200px) {
+            .main-container {
+                grid-template-columns: 1fr;
+                grid-template-rows: auto auto 1fr;
+            }
+
+            .control-panel,
+            .metrics-panel {
+                height: auto;
+                max-height: 300px;
+            }
+
+            .world-map-container {
+                min-height: 500px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>🌍 GeoAI Adaptive Fusion - Live World Map Testing</h1>
+        <div class="status-bar">
+            <span>Backend</span>
+            <div id="backendStatus" class="status-indicator active"></div>
+            <span>RL Agent</span>
+            <div id="rlAgentStatus" class="status-indicator active"></div>
+            <span>WebSocket</span>
+            <div id="wsStatus" class="status-indicator processing"></div>
+        </div>
+    </div>
+
+    <div class="main-container">
+        <!-- Control Panel -->
+        <div class="control-panel">
+            <div class="control-section">
+                <h3>🎯 Single Location Testing</h3>
+                <select id="locationSelect" style="width: 100%; padding: 8px; margin-bottom: 10px; border-radius: 4px; border: 1px solid #00ff88; background: rgba(0,0,0,0.8); color: white;">
+                    <option value="">Select Location...</option>
+                </select>
+                <div style="margin: 10px 0;">
+                    <label>
+                        <input type="checkbox" id="realTimeTraining" checked> Real-time Training
+                    </label>
+                </div>
+                <div style="margin: 10px 0;">
+                    <label style="display: block; margin-bottom: 5px;">Iterations:</label>
+                    <input type="range" id="iterationsSlider" min="5" max="50" value="20" style="width: 100%;">
+                    <span id="iterationsValue">20</span>
+                </div>
+                <button class="btn" id="startSingleTest">🚀 Start Single Test</button>
+            </div>
+
+            <div class="control-section">
+                <h3>🌐 World Map Batch Testing</h3>
+                <div class="region-filter" id="regionFilter">
+                    <!-- Populated by JavaScript -->
+                </div>
+                <div style="margin: 10px 0;">
+                    <label style="display: block; margin-bottom: 5px;">Locations per Region:</label>
+                    <input type="range" id="locationsPerRegion" min="1" max="10" value="3" style="width: 100%;">
+                    <span id="locationsPerRegionValue">3</span>
+                </div>
+                <div style="margin: 10px 0;">
+                    <label>
+                        <input type="checkbox" id="parallelProcessing" checked> Parallel Processing
+                    </label>
+                </div>
+                <button class="btn" id="startBatchTest">🌍 Start Batch Test</button>
+                <button class="btn" id="stopAllTests" style="background: linear-gradient(45deg, #ff4444, #cc0000);">⏹️ Stop All Tests</button>
+            </div>
+
+            <div class="control-section">
+                <h3>📊 RL Agent Controls</h3>
+                <button class="btn" id="resetRLAgent">🔄 Reset RL Agent</button>
+                <button class="btn" id="saveRLModel">💾 Save Model</button>
+                <button class="btn" id="loadRLModel">📁 Load Model</button>
+            </div>
+        </div>
+
+        <!-- World Map -->
+        <div class="world-map-container">
+            <div id="worldMap"></div>
+            <div id="loadingOverlay" class="loading-overlay" style="display: none;">
+                <div class="loading-spinner"></div>
+                <div>Processing locations...</div>
+            </div>
+        </div>
+
+        <!-- Metrics Panel -->
+        <div class="metrics-panel">
+            <div class="metric-card">
+                <h4>🎯 Global Performance</h4>
+                <div class="metric-value" id="globalIoU">0.000</div>
+                <div class="metric-label">Average IoU</div>
+                <div class="progress-bar">
+                    <div class="progress-fill" id="ioUProgress"></div>
+                </div>
+            </div>
+
+            <div class="metric-card">
+                <h4>📍 Testing Progress</h4>
+                <div class="metric-value" id="locationsProcessed">0</div>
+                <div class="metric-label">Locations Processed</div>
+                <div style="display: flex; justify-content: space-between; margin-top: 10px;">
+                    <span>Success: <strong id="successCount">0</strong></span>
+                    <span>Rate: <strong id="successRate">0%</strong></span>
+                </div>
+            </div>
+
+            <div class="rl-stats">
+                <h4>🤖 RL Agent Statistics</h4>
+                <div class="rl-stat-item">
+                    <span class="rl-stat-label">Epsilon:</span>
+                    <span class="rl-stat-value" id="rlEpsilon">0.300</span>
+                </div>
+                <div class="rl-stat-item">
+                    <span class="rl-stat-label">Memory Size:</span>
+                    <span class="rl-stat-value" id="rlMemorySize">0</span>
+                </div>
+                <div class="rl-stat-item">
+                    <span class="rl-stat-label">Episodes:</span>
+                    <span class="rl-stat-value" id="rlEpisodes">0</span>
+                </div>
+                <div class="rl-stat-item">
+                    <span class="rl-stat-label">Best IoU:</span>
+                    <span class="rl-stat-value" id="rlBestIoU">0.000</span>
+                </div>
+            </div>
+
+            <div class="metric-card">
+                <h4>⚡ Real-time Status</h4>
+                <div style="font-size: 0.9rem;">
+                    <div>Active Jobs: <strong id="activeJobs">0</strong></div>
+                    <div>Active Sessions: <strong id="activeSessions">0</strong></div>
+                    <div>Device: <strong id="deviceInfo">CPU</strong></div>
+                </div>
+            </div>
+
+            <div class="console-log" id="consoleLog">
+                <div class="console-line info">[INFO] System initialized</div>
+                <div class="console-line info">[INFO] Connecting to backend...</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Notification -->
+    <div class="notification" id="notification"></div>
+
+    <!-- Three.js and other scripts -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script>
+        // Global variables
+        let scene, camera, renderer, globe;
+        let worldLocations = {};
+        let locationMarkers = {};
+        let activeJobs = new Set();
+        let activeSessions = new Set();
+        let websocket = null;
+        let selectedRegions = new Set();
+        
+        // API Base URL
+        const API_BASE = 'http://localhost:8001';
+        const WS_URL = 'ws://localhost:8001/ws/live-metrics';
+
+        // Initialize the application
+        async function init() {
+            try {
+                await initThreeJS();
+                await loadWorldLocations();
+                setupEventListeners();
+                connectWebSocket();
+                startPeriodicUpdates();
+                log('System ready for live world map testing', 'success');
+            } catch (error) {
+                log(`Initialization failed: ${error.message}`, 'error');
+            }
+        }
+
+        // Initialize Three.js world map
+        function initThreeJS() {
+            const container = document.getElementById('worldMap');
+            
+            // Scene
+            scene = new THREE.Scene();
+            scene.background = new THREE.Color(0x000011);
+            
+            // Camera
+            camera = new THREE.PerspectiveCamera(
+                75, 
+                container.clientWidth / container.clientHeight, 
+                0.1, 
+                1000
+            );
+            camera.position.z = 3;
+            
+            // Renderer
+            renderer = new THREE.WebGLRenderer({ antialias: true });
+            renderer.setSize(container.clientWidth, container.clientHeight);
+            renderer.shadowMap.enabled = true;
+            container.appendChild(renderer.domElement);
+            
+            // Create Earth globe
+            createEarth();
+            
+            // Lighting
+            const ambientLight = new THREE.AmbientLight(0x404040, 0.6);
+            scene.add(ambientLight);
+            
+            const directionalLight = new THREE.DirectionalLight(0xffffff, 1);
+            directionalLight.position.set(1, 1, 1).normalize();
+            scene.add(directionalLight);
+            
+            // Mouse controls (simplified)
+            setupMouseControls();
+            
+            // Start animation loop
+            animate();
+            
+            // Handle resize
+            window.addEventListener('resize', onWindowResize);
+            
+            return Promise.resolve();
+        }
+
+        function createEarth() {
+            // Earth geometry
+            const geometry = new THREE.SphereGeometry(1, 64, 32);
+            
+            // Earth material with texture simulation
+            const material = new THREE.MeshPhongMaterial({
+                color: 0x2233ff,
+                shininess: 0.8,
+                transparent: true,
+                opacity: 0.9
+            });
+            
+            globe = new THREE.Mesh(geometry, material);
+            scene.add(globe);
+            
+            // Add atmosphere glow
+            const atmosphereGeometry = new THREE.SphereGeometry(1.05, 64, 32);
+            const atmosphereMaterial = new THREE.MeshBasicMaterial({
+                color: 0x00ff88,
+                transparent: true,
+                opacity: 0.1,
+                side: THREE.BackSide
+            });
+            
+            const atmosphere = new THREE.Mesh(atmosphereGeometry, atmosphereMaterial);
+            scene.add(atmosphere);
+        }
+
+        function setupMouseControls() {
+            let isMouseDown = false;
+            let mouseX = 0, mouseY = 0;
+            let rotationX = 0, rotationY = 0;
+            
+            const container = renderer.domElement;
+            
+            container.addEventListener('mousedown', (event) => {
+                isMouseDown = true;
+                mouseX = event.clientX;
+                mouseY = event.clientY;
+            });
+            
+            container.addEventListener('mousemove', (event) => {
+                if (!isMouseDown) return;
+                
+                const deltaX = event.clientX - mouseX;
+                const deltaY = event.clientY - mouseY;
+                
+                rotationY += deltaX * 0.01;
+                rotationX += deltaY * 0.01;
+                
+                rotationX = Math.max(-Math.PI / 2, Math.min(Math.PI / 2, rotationX));
+                
+                globe.rotation.y = rotationY;
+                globe.rotation.x = rotationX;
+                
+                mouseX = event.clientX;
+                mouseY = event.clientY;
+            });
+            
+            container.addEventListener('mouseup', () => {
+                isMouseDown = false;
+            });
+            
+            container.addEventListener('wheel', (event) => {
+                event.preventDefault();
+                camera.position.z += event.deltaY * 0.001;
+                camera.position.z = Math.max(1.5, Math.min(5, camera.position.z));
+            });
+        }
+
+        function animate() {
+            requestAnimationFrame(animate);
+            
+            // Gentle globe rotation
+            if (globe) {
+                globe.rotation.y += 0.002;
+            }
+            
+            // Update location markers
+            updateLocationMarkers();
+            
+            renderer.render(scene, camera);
+        }
+
+        function onWindowResize() {
+            const container = document.getElementById('worldMap');
+            camera.aspect = container.clientWidth / container.clientHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(container.clientWidth, container.clientHeight);
+        }
+
+        // Load world locations from API
+        async function loadWorldLocations() {
+            try {
+                const response = await fetch(`${API_BASE}/api/world-locations`);
+                const data = await response.json();
+                
+                worldLocations = data.locations;
+                
+                // Populate location selector
+                const select = document.getElementById('locationSelect');
+                select.innerHTML = '<option value="">Select Location...</option>';
+                
+                Object.keys(worldLocations).forEach(locationKey => {
+                    const location = worldLocations[locationKey];
+                    const option = document.createElement('option');
+                    option.value = locationKey;
+                    option.textContent = `${locationKey.replace(/_/g, ' ')} (${location.region})`;
+                    select.appendChild(option);
+                });
+                
+                // Setup region filters
+                setupRegionFilters(data.regions);
+                
+                // Add location markers to globe
+                addLocationMarkersToGlobe();
+                
+                log(`Loaded ${Object.keys(worldLocations).length} world locations`, 'info');
+                
+            } catch (error) {
+                log(`Failed to load locations: ${error.message}`, 'error');
+                throw error;
+            }
+        }
+
+        function setupRegionFilters(regions) {
+            const container = document.getElementById('regionFilter');
+            container.innerHTML = '';
+            
+            regions.forEach(region => {
+                const btn = document.createElement('div');
+                btn.className = 'region-btn active';
+                btn.textContent = region;
+                btn.onclick = () => toggleRegion(region, btn);
+                container.appendChild(btn);
+                selectedRegions.add(region);
+            });
+        }
+
+        function toggleRegion(region, btn) {
+            if (selectedRegions.has(region)) {
+                selectedRegions.delete(region);
+                btn.classList.remove('active');
+            } else {
+                selectedRegions.add(region);
+                btn.classList.add('active');
+            }
+        }
+
+        function addLocationMarkersToGlobe() {
+            Object.keys(worldLocations).forEach(locationKey => {
+                const location = worldLocations[locationKey];
+                
+                // Convert lat/lng to 3D position on sphere
+                const phi = (90 - location.lat) * (Math.PI / 180);
+                const theta = (location.lng + 180) * (Math.PI / 180);
+                
+                const x = -(Math.sin(phi) * Math.cos(theta));
+                const z = (Math.sin(phi) * Math.sin(theta));
+                const y = Math.cos(phi);
+                
+                // Create marker geometry
+                const markerGeometry = new THREE.SphereGeometry(0.02, 8, 6);
+                const markerMaterial = new THREE.MeshBasicMaterial({ 
+                    color: 0x666666,
+                    transparent: true,
+                    opacity: 0.8
+                });
+                
+                const marker = new THREE.Mesh(markerGeometry, markerMaterial);
+                marker.position.set(x * 1.02, y * 1.02, z * 1.02);
+                marker.userData = { locationKey, status: 'idle' };
+                
+                scene.add(marker);
+                locationMarkers[locationKey] = marker;
+            });
+        }
+
+        function updateLocationMarkers() {
+            Object.values(locationMarkers).forEach(marker => {
+                const status = marker.userData.status;
+                
+                switch (status) {
+                    case 'idle':
+                        marker.material.color.setHex(0x666666);
+                        marker.material.opacity = 0.6;
+                        break;
+                    case 'processing':
+                        marker.material.color.setHex(0xffaa00);
+                        marker.material.opacity = 0.8 + 0.2 * Math.sin(Date.now() * 0.005);
+                        break;
+                    case 'success':
+                        marker.material.color.setHex(0x00ff88);
+                        marker.material.opacity = 0.9;
+                        break;
+                    case 'error':
+                        marker.material.color.setHex(0xff4444);
+                        marker.material.opacity = 0.8;
+                        break;
+                }
+            });
+        }
+
+        // Event listeners
+        function setupEventListeners() {
+            // Sliders
+            const iterationsSlider = document.getElementById('iterationsSlider');
+            const iterationsValue = document.getElementById('iterationsValue');
+            iterationsSlider.oninput = () => {
+                iterationsValue.textContent = iterationsSlider.value;
+            };
+            
+            const locationsSlider = document.getElementById('locationsPerRegion');
+            const locationsValue = document.getElementById('locationsPerRegionValue');
+            locationsSlider.oninput = () => {
+                locationsValue.textContent = locationsSlider.value;
+            };
+            
+            // Buttons
+            document.getElementById('startSingleTest').onclick = startSingleLocationTest;
+            document.getElementById('startBatchTest').onclick = startBatchTest;
+            document.getElementById('stopAllTests').onclick = stopAllTests;
+            document.getElementById('resetRLAgent').onclick = resetRLAgent;
+            document.getElementById('saveRLModel').onclick = saveRLModel;
+            document.getElementById('loadRLModel').onclick = loadRLModel;
+        }
+
+        // API functions
+        async function startSingleLocationTest() {
+            const location = document.getElementById('locationSelect').value;
+            if (!location) {
+                showNotification('Please select a location', 'warning');
+                return;
+            }
+            
+            const realTimeTraining = document.getElementById('realTimeTraining').checked;
+            const iterations = parseInt(document.getElementById('iterationsSlider').value);
+            
+            try {
+                setLocationStatus(location, 'processing');
+                
+                const response = await fetch(`${API_BASE}/api/process/single-location`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        location: location,
+                        technique: 'adaptive_fusion_rl',
+                        real_time_training: realTimeTraining,
+                        num_iterations: iterations,
+                        use_satellite_imagery: true
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    activeJobs.add(data.job_id);
+                    log(`Started processing ${location} (Job: ${data.job_id})`, 'info');
+                    showNotification(`Started processing ${location}`, 'success');
+                    
+                    // Monitor job progress
+                    monitorJob(data.job_id, location);
+                } else {
+                    throw new Error(data.detail || 'Failed to start job');
+                }
+                
+            } catch (error) {
+                setLocationStatus(location, 'error');
+                log(`Error starting single test: ${error.message}`, 'error');
+                showNotification('Failed to start test', 'error');
+            }
+        }
+
+        async function startBatchTest() {
+            if (selectedRegions.size === 0) {
+                showNotification('Please select at least one region', 'warning');
+                return;
+            }
+            
+            const locationsPerRegion = parseInt(document.getElementById('locationsPerRegion').value);
+            const parallelProcessing = document.getElementById('parallelProcessing').checked;
+            
+            try {
+                document.getElementById('loadingOverlay').style.display = 'flex';
+                
+                const response = await fetch(`${API_BASE}/api/world-map/batch-test`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        regions: Array.from(selectedRegions),
+                        num_locations_per_region: locationsPerRegion,
+                        parallel_processing: parallelProcessing,
+                        training_enabled: true,
+                        performance_tracking: true
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    activeSessions.add(data.session_id);
+                    log(`Started batch test (Session: ${data.session_id})`, 'info');
+                    showNotification(`Started batch test with ${data.total_locations} locations`, 'success');
+                    
+                    // Set all selected locations to processing
+                    data.selected_locations.forEach(loc => setLocationStatus(loc, 'processing'));
+                    
+                    // Monitor session progress
+                    monitorSession(data.session_id);
+                } else {
+                    throw new Error(data.detail || 'Failed to start batch test');
+                }
+                
+            } catch (error) {
+                document.getElementById('loadingOverlay').style.display = 'none';
+                log(`Error starting batch test: ${error.message}`, 'error');
+                showNotification('Failed to start batch test', 'error');
+            }
+        }
+
+        async function monitorJob(jobId, location) {
+            const checkInterval = setInterval(async () => {
+                try {
+                    const response = await fetch(`${API_BASE}/api/process/status/${jobId}`);
+                    const data = await response.json();
+                    
+                    if (data.status === 'completed') {
+                        clearInterval(checkInterval);
+                        activeJobs.delete(jobId);
+                        setLocationStatus(location, 'success');
+                        
+                        const iou = data.results?.final_performance?.best_iou || 0;
+                        log(`Completed ${location}: IoU = ${iou.toFixed(3)}`, 'success');
+                        showNotification(`${location} completed: IoU = ${iou.toFixed(3)}`, 'success');
+                        
+                    } else if (data.status === 'error') {
+                        clearInterval(checkInterval);
+                        activeJobs.delete(jobId);
+                        setLocationStatus(location, 'error');
+                        log(`Error processing ${location}: ${data.error}`, 'error');
+                        showNotification(`Error processing ${location}`, 'error');
+                    }
+                    
+                } catch (error) {
+                    log(`Error monitoring job ${jobId}: ${error.message}`, 'error');
+                }
+            }, 2000);
+        }
+
+        async function monitorSession(sessionId) {
+            const checkInterval = setInterval(async () => {
+                try {
+                    const response = await fetch(`${API_BASE}/api/world-map/session/${sessionId}`);
+                    const data = await response.json();
+                    
+                    // Update progress
+                    const progress = data.progress || 0;
+                    log(`Batch progress: ${progress}% (${data.completed_locations}/${data.total_locations})`, 'info');
+                    
+                    if (data.status === 'completed') {
+                        clearInterval(checkInterval);
+                        activeSessions.delete(sessionId);
+                        document.getElementById('loadingOverlay').style.display = 'none';
+                        
+                        // Update location statuses
+                        if (data.results) {
+                            data.results.forEach(result => {
+                                const status = result.final_performance?.best_iou > 0.5 ? 'success' : 'error';
+                                setLocationStatus(result.location, status);
+                            });
+                        }
+                        
+                        const avgIoU = data.summary?.average_iou || 0;
+                        log(`Batch test completed: Avg IoU = ${avgIoU.toFixed(3)}`, 'success');
+                        showNotification(`Batch test completed: Avg IoU = ${avgIoU.toFixed(3)}`, 'success');
+                        
+                    } else if (data.status === 'error') {
+                        clearInterval(checkInterval);
+                        activeSessions.delete(sessionId);
+                        document.getElementById('loadingOverlay').style.display = 'none';
+                        log(`Batch test error: ${data.error}`, 'error');
+                        showNotification('Batch test failed', 'error');
+                    }
+                    
+                } catch (error) {
+                    log(`Error monitoring session ${sessionId}: ${error.message}`, 'error');
+                }
+            }, 3000);
+        }
+
+        function setLocationStatus(locationKey, status) {
+            if (locationMarkers[locationKey]) {
+                locationMarkers[locationKey].userData.status = status;
+            }
+        }
+
+        async function stopAllTests() {
+            // This would require implementing stop endpoints in the backend
+            log('Stop functionality would be implemented here', 'warning');
+            showNotification('Stop functionality not yet implemented', 'warning');
+        }
+
+        async function resetRLAgent() {
+            log('Reset RL Agent functionality would be implemented here', 'warning');
+            showNotification('Reset functionality not yet implemented', 'warning');
+        }
+
+        async function saveRLModel() {
+            log('Save RL Model functionality would be implemented here', 'warning');
+            showNotification('Save functionality not yet implemented', 'warning');
+        }
+
+        async function loadRLModel() {
+            log('Load RL Model functionality would be implemented here', 'warning');
+            showNotification('Load functionality not yet implemented', 'warning');
+        }
+
+        // WebSocket connection
+        function connectWebSocket() {
+            try {
+                websocket = new WebSocket(WS_URL);
+                
+                websocket.onopen = () => {
+                    document.getElementById('wsStatus').className = 'status-indicator active';
+                    log('WebSocket connected', 'success');
+                };
+                
+                websocket.onmessage = (event) => {
+                    const data = JSON.parse(event.data);
+                    updateMetrics(data);
+                };
+                
+                websocket.onclose = () => {
+                    document.getElementById('wsStatus').className = 'status-indicator error';
+                    log('WebSocket disconnected', 'warning');
+                    
+                    // Attempt reconnection
+                    setTimeout(connectWebSocket, 5000);
+                };
+                
+                websocket.onerror = (error) => {
+                    document.getElementById('wsStatus').className = 'status-indicator error';
+                    log('WebSocket error', 'error');
+                };
+                
+            } catch (error) {
+                log(`WebSocket connection failed: ${error.message}`, 'error');
+            }
+        }
+
+        function updateMetrics(data) {
+            try {
+                // RL Agent metrics
+                if (data.rl_agent) {
+                    document.getElementById('globalIoU').textContent = 
+                        (data.rl_agent.average_iou || 0).toFixed(3);
+                    document.getElementById('rlEpsilon').textContent = 
+                        (data.rl_agent.epsilon || 0).toFixed(3);
+                    document.getElementById('rlMemorySize').textContent = 
+                        data.rl_agent.memory_size || 0;
+                    document.getElementById('rlEpisodes').textContent = 
+                        data.rl_agent.total_training_episodes || 0;
+                    document.getElementById('rlBestIoU').textContent = 
+                        (data.rl_agent.best_iou || 0).toFixed(3);
+                    
+                    // Update progress bar
+                    const ioUProgress = (data.rl_agent.average_iou || 0) * 100;
+                    document.getElementById('ioUProgress').style.width = `${ioUProgress}%`;
+                }
+                
+                // Global testing metrics
+                if (data.global_testing) {
+                    document.getElementById('locationsProcessed').textContent = 
+                        data.global_testing.total_locations_tested || 0;
+                    document.getElementById('successCount').textContent = 
+                        data.global_testing.successful_detections || 0;
+                    
+                    const total = data.global_testing.total_locations_tested || 0;
+                    const success = data.global_testing.successful_detections || 0;
+                    const rate = total > 0 ? ((success / total) * 100).toFixed(1) : 0;
+                    document.getElementById('successRate').textContent = `${rate}%`;
+                }
+                
+                // Active status
+                document.getElementById('activeJobs').textContent = data.active_jobs || 0;
+                document.getElementById('activeSessions').textContent = data.active_sessions || 0;
+                
+            } catch (error) {
+                log(`Error updating metrics: ${error.message}`, 'error');
+            }
+        }
+
+        // Periodic updates
+        function startPeriodicUpdates() {
+            setInterval(async () => {
+                try {
+                    // Check backend status
+                    const response = await fetch(`${API_BASE}/`);
+                    if (response.ok) {
+                        document.getElementById('backendStatus').className = 'status-indicator active';
+                    } else {
+                        document.getElementById('backendStatus').className = 'status-indicator error';
+                    }
+                    
+                    // Check RL agent status
+                    const rlResponse = await fetch(`${API_BASE}/api/rl-agent/status`);
+                    if (rlResponse.ok) {
+                        document.getElementById('rlAgentStatus').className = 'status-indicator active';
+                        const rlData = await rlResponse.json();
+                        document.getElementById('deviceInfo').textContent = 
+                            rlData.device || 'CPU';
+                    } else {
+                        document.getElementById('rlAgentStatus').className = 'status-indicator error';
+                    }
+                    
+                } catch (error) {
+                    document.getElementById('backendStatus').className = 'status-indicator error';
+                    document.getElementById('rlAgentStatus').className = 'status-indicator error';
+                }
+            }, 10000); // Check every 10 seconds
+        }
+
+        // Utility functions
+        function log(message, type = 'info') {
+            const console = document.getElementById('consoleLog');
+            const line = document.createElement('div');
+            line.className = `console-line ${type}`;
+            line.textContent = `[${new Date().toLocaleTimeString()}] ${message}`;
+            
+            console.appendChild(line);
+            console.scrollTop = console.scrollHeight;
+            
+            // Keep only last 50 lines
+            while (console.children.length > 50) {
+                console.removeChild(console.firstChild);
+            }
+        }
+
+        function showNotification(message, type = 'info') {
+            const notification = document.getElementById('notification');
+            notification.textContent = message;
+            notification.className = `notification show ${type}`;
+            
+            setTimeout(() => {
+                notification.classList.remove('show');
+            }, 3000);
+        }
+
+        // Initialize when page loads
+        document.addEventListener('DOMContentLoaded', init);
+    </script>
+</body>
+</html>
