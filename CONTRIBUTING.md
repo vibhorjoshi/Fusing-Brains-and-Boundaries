@@ -1,6 +1,18 @@
-# Contributing to GPU-Accelerated Building Footprint Extraction
+# Contributing to Fusing Brains & Boundaries
 
-We welcome contributions from the community! This guide will help you get started.
+🎉 First of all, thank you for considering contributing to our project! 🎉
+
+This document provides guidelines and instructions for contributing to this project, especially during Hacktoberfest 2025. Following these guidelines helps to communicate that you respect the time of the developers managing and developing this open source project.
+
+## 🎃 Hacktoberfest 2025
+
+This repository is participating in Hacktoberfest 2025! We welcome contributions from developers of all skill levels. To qualify for the official Hacktoberfest swag, you need to register and make four valid pull requests (PRs) between October 1-31.
+
+### 📝 How to Find Issues for Hacktoberfest
+
+- Look for issues labeled with `hacktoberfest`, `good first issue`, or `help wanted`
+- Check our [Hacktoberfest project board](https://github.com/vibhorjoshi/Fusing-Brains-and-Boundaries/projects)
+- If you have an idea that's not listed, please open an issue first to discuss it
 
 ## 🚀 Quick Contributing Guide
 
@@ -9,25 +21,25 @@ We welcome contributions from the community! This guide will help you get starte
 1. Fork the repository
 2. Clone your fork:
    ```bash
-   git clone https://github.com/YOUR_USERNAME/geo-ai-research-paper.git
-   cd geo-ai-research-paper
+   git clone https://github.com/YOUR_USERNAME/Fusing-Brains-and-Boundaries.git
+   cd Fusing-Brains-and-Boundaries
    ```
 3. Create a virtual environment and install dependencies:
    ```bash
    python -m venv .venv
    source .venv/bin/activate  # On Windows: .venv\Scripts\activate
    pip install -r requirements.txt
-   pip install -r requirements-dev.txt  # Development dependencies
    ```
 
 ## 🎯 How to Contribute
 
 ### Areas We Need Help With
 
-1. **New City Integrations** 🌍
-   - Add support for new countries/regions
-   - Implement additional map providers (OpenStreetMap, Bing Maps)
-   - Create city-specific optimizations
+1. **Agricultural Detection Improvements** 🌍
+   - Add support for new regions/countries
+   - Implement additional satellite data providers
+   - Create region-specific optimizations
+   - Improve detection accuracy
 
 2. **Performance Optimizations** ⚡
    - Multi-GPU training improvements
