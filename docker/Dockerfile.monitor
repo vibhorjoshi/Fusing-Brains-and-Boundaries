@@ -1,0 +1,29 @@
+FROM python:3.11-slim
+
+WORKDIR /app
+
+# Install system dependencies
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends \
+        build-essential \
+        curl \
+        git \
+        docker.io && \
+    apt-get clean && \
+    rm -rf /var/lib/apt/lists/*
+
+# Copy monitoring requirements
+RUN pip install --no-cache-dir psutil redis docker prometheus_client flask
+
+# Copy monitoring script
+COPY docker/monitoring_service.py .
+
+# Set environment variables
+ENV PYTHONUNBUFFERED=1
+ENV PYTHONDONTWRITEBYTECODE=1
+
+# Expose metrics endpoint
+EXPOSE 9090
+
+# Start monitoring service
+CMD ["python", "monitoring_service.py"]

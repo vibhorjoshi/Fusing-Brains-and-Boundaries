@@ -1,0 +1,16 @@
+FROM redis:7.2-alpine
+
+# Copy custom Redis configuration
+COPY redis/redis.conf /usr/local/etc/redis/redis.conf
+
+# Set permissions
+RUN chmod 644 /usr/local/etc/redis/redis.conf
+
+# Define volume for Redis data
+VOLUME /data
+
+# Expose Redis port
+EXPOSE 6379
+
+# Run Redis with custom config
+CMD ["redis-server", "/usr/local/etc/redis/redis.conf"]
