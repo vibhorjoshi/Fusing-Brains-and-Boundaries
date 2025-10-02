@@ -1,0 +1,37 @@
+# GeoAI Research Frontend Dependencies
+
+# Streamlit and interactive UI
+streamlit==1.28.2
+streamlit-folium==0.15.0
+
+# Data visualization
+plotly==5.15.0
+matplotlib==3.7.3
+seaborn==0.12.2
+altair==4.2.2
+pydeck==0.8.0
+
+# Data handling
+pandas==2.0.3
+numpy==1.24.4
+pillow==10.0.1
+
+# Geo libraries
+folium==0.14.0
+branca==0.6.0
+geopandas==0.13.2
+shapely==2.0.1
+
+# Utils
+requests==2.31.0
+python-dotenv==1.0.0
+watchdog==3.0.0
+
+# Protobuf for compatibility
+protobuf==3.20.3
+
+# Rich for enhanced terminal output
+rich==13.7.0
+
+# For file operations
+toml==0.10.2

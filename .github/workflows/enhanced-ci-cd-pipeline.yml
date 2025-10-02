@@ -40,7 +40,7 @@ jobs:
         missing_files=()
         
         # Check essential configuration files
-        for file in "requirements.txt" "streamlit_requirements.txt" "docker-compose.yml"; do
+        for file in "requirements.txt" "backend/requirements.txt" "docker-compose.yml"; do
           if [ ! -f "$file" ]; then
             missing_files+=("$file")
           fi
@@ -163,29 +163,39 @@ jobs:
         # Print pip version for debugging
         pip --version
         
-        if [ -f streamlit_requirements.txt ]; then
-          # Install with --no-deps first to avoid dependency conflicts
-          pip install -r streamlit_requirements.txt --no-deps
-          # Then install dependencies separately
-          pip install -r streamlit_requirements.txt --no-cache-dir
-        else
-          pip install streamlit==1.28.2 pandas==2.0.3 numpy==1.24.4 plotly==5.15.0 requests==2.31.0 pillow==10.0.1 protobuf==3.20.3
+        # Install backend dependencies
+        if [ -f backend/requirements.txt ]; then
+          echo "Installing backend dependencies..."
+          pip install -r backend/requirements.txt
         fi
         
-    - name: 🧪 Validate Streamlit App
+        # Install frontend dependencies
+        if [ -f frontend/requirements.txt ]; then
+          echo "Installing frontend dependencies..."
+          pip install -r frontend/requirements.txt
+        fi
+        
+    - name: 🧪 Validate Python Files
       run: |
+        # Check backend Python files
+        if [ -d "backend" ]; then
+          echo "Validating backend Python files..."
+          find backend -name "*.py" -type f -exec python -m py_compile {} \;
+          echo "✅ Backend Python files syntax valid"
+        fi
+        
+        # Check frontend Python files
+        if [ -d "frontend" ]; then
+          echo "Validating frontend Python files..."
+          find frontend -name "*.py" -type f -exec python -m py_compile {} \;
+          echo "✅ Frontend Python files syntax valid"
+        fi
+        
+        # Check any Streamlit app in the root directory (legacy)
         if [ -f "streamlit_app.py" ]; then
-          # Check for syntax errors
+          echo "Validating root Streamlit app..."
           python -m py_compile streamlit_app.py
-          echo "✅ Streamlit app syntax valid"
-          
-          # Ensure streamlit_backend.py can be imported
-          if [ -f "streamlit_backend.py" ]; then
-            python -m py_compile streamlit_backend.py
-            echo "✅ Streamlit backend syntax valid"
-          fi
-        else
-          echo "⚠️ streamlit_app.py not found, skipping Streamlit validation"
+          echo "✅ Root Streamlit app syntax valid"
         fi
 
   # Test Frontend
@@ -229,7 +239,7 @@ jobs:
   build-docker:
     name: 🐳 Build Docker Images
     runs-on: ubuntu-latest
-    needs: [test-python, test-streamlit]
+    needs: [test-python]
     if: success() && (github.event_name == 'push' || github.event_name == 'workflow_dispatch')
     
     permissions:
@@ -244,9 +254,6 @@ jobs:
             context: .
           - image: frontend
             dockerfile: Dockerfile.frontend
-            context: .
-          - image: streamlit
-            dockerfile: docker/Dockerfile.streamlit
             context: .
             
     steps:
