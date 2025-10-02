@@ -22,6 +22,15 @@ from pathlib import Path
 # from src.data_handler import DataHandler
 # from src.evaluator import Evaluator
 
+# Import Redis client
+from redis_client import (
+    get_async_redis_connection,
+    store_job, get_job, update_job, list_jobs as redis_list_jobs,
+    store_result, get_result,
+    set_cache, get_cache,
+    update_stats, increment_stat, get_stats
+)
+
 app = FastAPI(
     title="Fusing Brains & Boundaries API",
     description="GPU-Accelerated Building Footprint Extraction System",
@@ -67,8 +76,7 @@ class JobStatus(BaseModel):
 
 # ==================== Storage ====================
 
-jobs_storage = {}
-results_storage = {}
+# Using Redis for storage instead of in-memory dictionaries
 OUTPUT_DIR = Path("outputs")
 OUTPUT_DIR.mkdir(exist_ok=True)
 
@@ -100,7 +108,8 @@ manager = ConnectionManager()
 async def process_building_extraction(job_id: str, request: ProcessingRequest):
     """Background task for building footprint extraction"""
     try:
-        jobs_storage[job_id]["status"] = "processing"
+        # Update job status in Redis
+        await update_job(job_id, {"status": "processing"})
         
         # Stage 1: Data Loading
         await manager.send_progress(job_id, {
@@ -213,10 +222,20 @@ async def process_building_extraction(job_id: str, request: ProcessingRequest):
             }
         }
         
-        jobs_storage[job_id]["status"] = "completed"
-        jobs_storage[job_id]["completed_at"] = datetime.now().isoformat()
-        jobs_storage[job_id]["results"] = results
-        results_storage[job_id] = results
+        # Update job in Redis
+        completed_at = datetime.now().isoformat()
+        await update_job(job_id, {
+            "status": "completed",
+            "completed_at": completed_at,
+            "results": results
+        })
+        
+        # Store results separately in Redis
+        await store_result(job_id, results)
+        
+        # Update stats
+        await increment_stat("completed_jobs")
+        await increment_stat("total_buildings_detected", results["buildings_detected"])
         
         await manager.send_progress(job_id, {
             "stage": 11,
@@ -228,8 +247,15 @@ async def process_building_extraction(job_id: str, request: ProcessingRequest):
         })
         
     except Exception as e:
-        jobs_storage[job_id]["status"] = "failed"
-        jobs_storage[job_id]["error"] = str(e)
+        # Update job status in Redis on failure
+        await update_job(job_id, {
+            "status": "failed",
+            "error": str(e)
+        })
+        
+        # Update error stats
+        await increment_stat("failed_jobs")
+        
         await manager.send_progress(job_id, {
             "error": str(e),
             "message": "Processing failed"
@@ -261,7 +287,8 @@ async def start_processing(request: ProcessingRequest, background_tasks: Backgro
     """Start building footprint extraction process"""
     job_id = str(uuid.uuid4())
     
-    jobs_storage[job_id] = {
+    # Create job data
+    job_data = {
         "job_id": job_id,
         "status": "queued",
         "progress": 0.0,
@@ -272,33 +299,44 @@ async def start_processing(request: ProcessingRequest, background_tasks: Backgro
         "request": request.dict()
     }
     
+    # Store in Redis
+    await store_job(job_id, job_data)
+    
+    # Start background task
     background_tasks.add_task(process_building_extraction, job_id, request)
     
-    return JobStatus(**jobs_storage[job_id])
+    # Update stats
+    await increment_stat("total_jobs")
+    await increment_stat("queued_jobs")
+    
+    return JobStatus(**job_data)
 
 @app.get("/api/jobs/{job_id}", response_model=JobStatus)
 async def get_job_status(job_id: str):
     """Get status of a processing job"""
-    if job_id not in jobs_storage:
+    job_data = await get_job(job_id)
+    if not job_data:
         raise HTTPException(status_code=404, detail="Job not found")
     
-    return JobStatus(**jobs_storage[job_id])
+    return JobStatus(**job_data)
 
 @app.get("/api/jobs")
-async def list_jobs():
+async def list_jobs(limit: int = 50, offset: int = 0):
     """List all jobs"""
+    jobs = await redis_list_jobs(limit, offset)
     return {
-        "jobs": list(jobs_storage.values()),
-        "total": len(jobs_storage)
+        "jobs": jobs,
+        "total": len(jobs)
     }
 
 @app.get("/api/results/{job_id}")
 async def get_results(job_id: str):
     """Get detailed results of a completed job"""
-    if job_id not in results_storage:
+    results = await get_result(job_id)
+    if not results:
         raise HTTPException(status_code=404, detail="Results not found")
     
-    return results_storage[job_id]
+    return results
 
 @app.websocket("/ws/{job_id}")
 async def websocket_endpoint(websocket: WebSocket, job_id: str):
@@ -317,7 +355,8 @@ async def start_training(request: TrainingRequest, background_tasks: BackgroundT
     """Start model training"""
     job_id = str(uuid.uuid4())
     
-    jobs_storage[job_id] = {
+    # Create training job
+    job_data = {
         "job_id": job_id,
         "status": "training",
         "progress": 0.0,
@@ -325,6 +364,12 @@ async def start_training(request: TrainingRequest, background_tasks: BackgroundT
         "started_at": datetime.now().isoformat(),
         "type": "training"
     }
+    
+    # Store in Redis
+    await store_job(job_id, job_data)
+    
+    # Update stats
+    await increment_stat("training_jobs")
     
     return {"job_id": job_id, "message": "Training started"}
 
@@ -349,13 +394,25 @@ async def list_states():
 @app.get("/api/stats")
 async def get_system_stats():
     """Get system statistics"""
-    return {
-        "total_jobs": len(jobs_storage),
-        "completed_jobs": len([j for j in jobs_storage.values() if j["status"] == "completed"]),
-        "active_jobs": len([j for j in jobs_storage.values() if j["status"] == "processing"]),
+    # Get stats from Redis
+    redis_stats = await get_stats()
+    
+    # Add GPU stats
+    stats = {
+        **redis_stats,
         "gpu_available": torch.cuda.is_available(),
         "gpu_utilization": torch.cuda.utilization() if torch.cuda.is_available() else 0
     }
+    
+    # Make sure we have default values
+    if "total_jobs" not in stats:
+        stats["total_jobs"] = "0"
+    if "completed_jobs" not in stats:
+        stats["completed_jobs"] = "0"
+    if "active_jobs" not in stats:
+        stats["active_jobs"] = "0"
+        
+    return stats
 
 if __name__ == "__main__":
     import uvicorn
