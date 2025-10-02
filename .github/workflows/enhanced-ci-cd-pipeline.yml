@@ -647,7 +647,7 @@ jobs:
           mkdocs build
           
       - name: 📤 Upload Documentation
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: documentation
           path: |
@@ -845,7 +845,7 @@ jobs:
           EOF
           
       - name: 📤 Upload Deployment Artifacts
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: deployment-package
           path: deployment/
@@ -1079,7 +1079,7 @@ jobs:
           cat deployment_report.md
       
       - name: 📤 Upload Deployment Report
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: deployment-report
           path: deployment_report.md
@@ -1138,7 +1138,7 @@ jobs:
           cache-to: type=gha,mode=max
           
       - name: 📤 Upload Performance Report
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: performance-report
           path: performance-report.md
@@ -1228,7 +1228,7 @@ jobs:
           fi
           
       - name: 📤 Upload Security Report
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: security-report
           path: security-report.md
