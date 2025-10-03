@@ -4,7 +4,24 @@ from pydantic import BaseModel
 from typing import Dict, Any, List, Optional
 import json
 import os
+import sys
 from datetime import datetime
+
+# Gracefully handle missing optional dependencies
+try:
+    import numpy as np
+except ImportError:
+    print("Warning: numpy not available", file=sys.stderr)
+    
+try:
+    import torch
+except ImportError:
+    print("Warning: PyTorch not available", file=sys.stderr)
+    
+try:
+    import cv2
+except ImportError:
+    print("Warning: OpenCV not available", file=sys.stderr)
 
 app = FastAPI(
     title="GeoAI API",

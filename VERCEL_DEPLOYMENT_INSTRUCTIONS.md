@@ -47,6 +47,15 @@ To use a custom domain with your Vercel deployment:
 2. Navigate to "Settings" > "Domains"
 3. Add your domain and follow the DNS configuration instructions
 
+## Handling Dependency Issues
+
+This project has been configured to handle dependency installation issues gracefully:
+
+1. The `vercel.json` file has been configured to use a custom installation command
+2. The `api/install_dependencies.sh` script has been added to handle dependency failures
+3. The requirements have been adjusted to be compatible with Vercel's environment
+4. The `detectron2` package and other problematic dependencies have been commented out
+
 ## Troubleshooting
 
 If you encounter any issues with the deployment:
@@ -55,3 +64,5 @@ If you encounter any issues with the deployment:
 2. Verify that all environment variables are correctly set
 3. Make sure the `vercel.json` configuration is valid
 4. Ensure that the Next.js project is properly configured for production builds
+5. If you encounter dependency issues, consider using the simplified `api/requirements.txt` file
+6. For the full application with all dependencies, consider using Docker or a different hosting solution
