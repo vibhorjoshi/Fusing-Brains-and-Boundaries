@@ -1,16 +1,16 @@
 # Updated Streamlit requirements for compatibility
-streamlit==1.28.2  # Specific version for compatibility
-pandas==2.0.3
-numpy==1.24.4
-plotly==5.15.0
-matplotlib==3.7.3
-pillow==10.0.1
-watchdog==3.0.0
-rich==13.7.0  # Reduced version for better compatibility
-requests==2.31.0
-websockets==11.0.3
+streamlit # Specific version for compatibility
+pandas
+numpy
+plotly
+matplotlib
+pillow
+watchdog
+rich  # Reduced version for better compatibility
+requests
+websockets
 # Additional dependencies
-protobuf==3.20.3  # Required for streamlit compatibility
-pydeck==0.8.0
-altair==4.2.2
-toml==0.10.2
+protobuf  # Required for streamlit compatibility
+pydeck
+altair
+toml
