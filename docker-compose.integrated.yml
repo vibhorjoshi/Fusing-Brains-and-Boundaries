@@ -1,0 +1,174 @@
+version: '3.8'
+
+services:
+  # Redis Database
+  redis:
+    image: redis:7.2-alpine
+    container_name: geoai-redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - geoai-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+
+  # FastAPI Backend ML Server - Using the GeoAI API
+  backend:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.api
+    container_name: geoai-backend
+    restart: unless-stopped
+    ports:
+      - "8007:8007"
+    environment:
+      - REDIS_URL=redis://redis:6379
+      - ENVIRONMENT=production
+      - API_HOST=0.0.0.0
+      - API_PORT=8007
+      - FRONTEND_URL=http://frontend:8081
+      - STREAMLIT_URL=http://streamlit:8501
+    volumes:
+      - ./data:/app/data
+      - ./outputs:/app/outputs
+      - ./models:/app/models
+      - ./src:/app/src
+    networks:
+      - geoai-network
+    depends_on:
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8007/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Frontend HTML Dashboard
+  frontend:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.frontend
+    container_name: geoai-frontend
+    restart: unless-stopped
+    ports:
+      - "8081:8081"
+    environment:
+      - API_URL=http://backend:8007
+      - NODE_ENV=production
+    volumes:
+      - .:/app
+    networks:
+      - geoai-network
+    depends_on:
+      - backend
+    command: python serve_frontend.py
+
+  # Streamlit Analytics Dashboard
+  streamlit:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.streamlit
+    container_name: geoai-streamlit
+    restart: unless-stopped
+    ports:
+      - "8501:8501"
+    environment:
+      - API_URL=http://backend:8007
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+    volumes:
+      - ./src:/app/src
+      - ./data:/app/data
+      - ./outputs:/app/outputs
+      - ./streamlit_backend.py:/app/streamlit_app.py
+    networks:
+      - geoai-network
+    depends_on:
+      - redis
+      - backend
+    command: streamlit run streamlit_app.py --server.port=8501 --server.address=0.0.0.0
+
+  # MaskRCNN service - For 3D mask creation
+  maskrcnn:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.maskrcnn
+    container_name: geoai-maskrcnn
+    restart: unless-stopped
+    volumes:
+      - ./data:/app/data
+      - ./outputs:/app/outputs
+      - ./models:/app/models
+      - ./src:/app/src
+    environment:
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+    networks:
+      - geoai-network
+    depends_on:
+      - redis
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+
+  # Performance monitoring service
+  monitor:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.monitor
+    container_name: geoai-monitor
+    restart: unless-stopped
+    ports:
+      - "9090:9090"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - ./src:/app/src
+    environment:
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+    networks:
+      - geoai-network
+    depends_on:
+      - redis
+
+  # Nginx Reverse Proxy (Optional - for production)
+  nginx:
+    image: nginx:alpine
+    container_name: geoai-nginx
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./nginx/ssl:/etc/nginx/ssl:ro
+    networks:
+      - geoai-network
+    depends_on:
+      - backend
+      - frontend
+      - streamlit
+    profiles:
+      - production
+
+volumes:
+  redis_data:
+    driver: local
+
+networks:
+  geoai-network:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.20.0.0/16

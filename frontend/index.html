@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GeoAI Frontend</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f5f7f9;
+            color: #333;
+        }
+        .container {
+            width: 80%;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+        header {
+            background-color: #1f77b4;
+            color: white;
+            padding: 2rem 0;
+            text-align: center;
+            margin-bottom: 2rem;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        h1 {
+            font-size: 2.5rem;
+            margin-bottom: 0.5rem;
+        }
+        .card {
+            background-color: white;
+            border-radius: 8px;
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+        .button {
+            display: inline-block;
+            background-color: #1f77b4;
+            color: white;
+            padding: 0.75rem 1.5rem;
+            border-radius: 4px;
+            text-decoration: none;
+            font-weight: bold;
+            margin-top: 1rem;
+        }
+        .metric-container {
+            display: flex;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            margin-top: 1rem;
+        }
+        .metric {
+            background-color: #f9f9f9;
+            border-radius: 8px;
+            padding: 1rem;
+            width: 48%;
+            margin-bottom: 1rem;
+            text-align: center;
+        }
+        .metric h3 {
+            margin-top: 0;
+            color: #1f77b4;
+        }
+        .metric p {
+            font-size: 1.5rem;
+            font-weight: bold;
+            margin: 0.5rem 0;
+        }
+        footer {
+            text-align: center;
+            padding: 2rem 0;
+            color: #666;
+            font-size: 0.9rem;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>🏗️ GeoAI Project</h1>
+        <p>Real USA Agricultural Detection System</p>
+    </header>
+    
+    <div class="container">
+        <div class="card">
+            <h2>Welcome to the GeoAI Frontend</h2>
+            <p>This is a simple frontend for the GeoAI project. Access the full dashboard via Streamlit:</p>
+            <a href="http://localhost:8502" class="button">Open Streamlit Dashboard</a>
+        </div>
+        
+        <div class="card">
+            <h2>System Monitoring</h2>
+            <p>Access the system monitoring dashboard:</p>
+            <a href="http://localhost:9090" class="button">Open Monitoring Dashboard</a>
+            
+            <div class="metric-container">
+                <div class="metric">
+                    <h3>CPU Usage</h3>
+                    <p id="cpu-usage">--</p>
+                </div>
+                <div class="metric">
+                    <h3>Memory Usage</h3>
+                    <p id="memory-usage">--</p>
+                </div>
+                <div class="metric">
+                    <h3>Services Running</h3>
+                    <p id="services-running">--</p>
+                </div>
+                <div class="metric">
+                    <h3>Last Updated</h3>
+                    <p id="last-updated">--</p>
+                </div>
+            </div>
+        </div>
+        
+        <div class="card">
+            <h2>Recent Results</h2>
+            <p>View the most recent agricultural detection results:</p>
+            <div id="results-container">
+                <p>No recent results available. Run an analysis first.</p>
+            </div>
+        </div>
+    </div>
+    
+    <footer>
+        <p>GeoAI Agricultural Detection System © 2025</p>
+    </footer>
+
+    <script>
+        // Function to update metrics (in a real app, this would fetch from an API)
+        function updateMetrics() {
+            document.getElementById('cpu-usage').innerText = Math.floor(Math.random() * 60) + 20 + '%';
+            document.getElementById('memory-usage').innerText = Math.floor(Math.random() * 40) + 50 + '%';
+            document.getElementById('services-running').innerText = '4/4';
+            document.getElementById('last-updated').innerText = new Date().toLocaleTimeString();
+        }
+
+        // Update metrics every 5 seconds
+        updateMetrics();
+        setInterval(updateMetrics, 5000);
+    </script>
+</body>
+</html>

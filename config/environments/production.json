@@ -1,0 +1,54 @@
+{
+  "environment": "production",
+  "debug": false,
+  "log_level": "WARNING",
+  "services": {
+    "api": {
+      "host": "0.0.0.0",
+      "port": 8000,
+      "workers": 8,
+      "timeout": 30
+    },
+    "database": {
+      "host": "geoai-prod-db-cluster",
+      "port": 5432,
+      "name": "geoai_production",
+      "user": "prod_user",
+      "connection_pool": 20,
+      "timeout": 15
+    },
+    "cache": {
+      "host": "geoai-prod-redis-cluster",
+      "port": 6379,
+      "ttl": 1800
+    },
+    "storage": {
+      "type": "s3",
+      "bucket": "geoai-production-storage",
+      "region": "us-east-1",
+      "max_size_mb": 10240
+    }
+  },
+  "features": {
+    "enable_experimental": false,
+    "enable_profiling": false,
+    "enable_debug_endpoints": false
+  },
+  "model": {
+    "path": "/opt/models/production",
+    "precision": "fp16",
+    "batch_size": 16,
+    "cache_predictions": true
+  },
+  "monitoring": {
+    "metrics_enabled": true,
+    "tracing_enabled": true,
+    "log_requests": false,
+    "performance_tracking": true
+  },
+  "cors": {
+    "origins": ["https://app.geoai-research.org"],
+    "methods": ["GET", "POST", "PUT", "DELETE"],
+    "allow_credentials": true
+  }
+}

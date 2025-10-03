@@ -1,0 +1,9 @@
+{
+  "status": "success",
+  "timestamp": "2025-10-02 22:49:38",
+  "data": {
+    "buildings_detected": 1543,
+    "accuracy": 0.92,
+    "processing_time_ms": 1850
+  }
+}

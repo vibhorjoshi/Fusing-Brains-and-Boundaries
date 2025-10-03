@@ -1,0 +1,31 @@
+{
+  "framework": "nextjs",
+  "buildCommand": "next build",
+  "outputDirectory": ".next",
+  "rewrites": [
+    {
+      "source": "/api/:path*",
+      "destination": "https://geoai-api.vercel.app/api/:path*"
+    },
+    {
+      "source": "/geoai/:path*",
+      "destination": "https://geoai-engine.vercel.app/geoai/:path*"
+    },
+    {
+      "source": "/dashboard/:path*",
+      "destination": "https://geoai-dashboard.vercel.app/:path*"
+    }
+  ],
+  "env": {
+    "NEXT_PUBLIC_API_URL": "https://geoai-api.vercel.app",
+    "NEXT_PUBLIC_GEOAI_ENGINE_URL": "https://geoai-engine.vercel.app",
+    "NEXT_PUBLIC_DASHBOARD_URL": "https://geoai-dashboard.vercel.app"
+  },
+  "build": {
+    "env": {
+      "NEXT_PUBLIC_API_URL": "https://geoai-api.vercel.app",
+      "NEXT_PUBLIC_GEOAI_ENGINE_URL": "https://geoai-engine.vercel.app",
+      "NEXT_PUBLIC_DASHBOARD_URL": "https://geoai-dashboard.vercel.app"
+    }
+  }
+}

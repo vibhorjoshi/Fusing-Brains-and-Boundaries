@@ -28,20 +28,26 @@ from urllib.parse import quote
 import warnings
 warnings.filterwarnings("ignore")
 
+# Import crop detection module
+try:
+    from src.geoai_crop_detection import detect_agricultural_crops
+    CROP_DETECTION_AVAILABLE = True
+except ImportError:
+    CROP_DETECTION_AVAILABLE = False
+
 try:
     from transformers import pipeline, AutoImageProcessor, AutoModel
     import torch
     HUGGINGFACE_AVAILABLE = True
 except ImportError:
     HUGGINGFACE_AVAILABLE = False
-
+    
 try:
     import rasterio
     from rasterio.io import MemoryFile
     RASTERIO_AVAILABLE = True
 except ImportError:
     RASTERIO_AVAILABLE = False
-
 
 class OpenSourceGeoAI:
     """Free and open-source geo AI client for building footprint analysis."""
@@ -832,3 +838,33 @@ class OpenSourceGeoAI:
             
         except Exception as e:
             return {'error': f'Hugging Face analysis failed: {e}'}
+            
+    def detect_crops(self, image: np.ndarray, region: str = None) -> Dict[str, Any]:
+        """
+        Detect agricultural crops in satellite imagery.
+        
+        Args:
+            image: Input satellite image
+            region: Optional region name for region-specific crop patterns
+            
+        Returns:
+            Dictionary with crop detection results including visualization
+        """
+        if not CROP_DETECTION_AVAILABLE:
+            return {
+                'error': 'Crop detection module not available',
+                'crop_detections': [],
+                'agricultural_area_percentage': 0.0
+            }
+        
+        try:
+            # Use the imported crop detection function
+            results = detect_agricultural_crops(image, region)
+            return results
+        except Exception as e:
+            print(f"Crop detection error: {e}")
+            return {
+                'error': f'Crop detection failed: {e}',
+                'crop_detections': [],
+                'agricultural_area_percentage': 0.0
+            }

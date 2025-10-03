@@ -11,6 +11,10 @@ import queue
 from datetime import datetime, timedelta
 import random
 import json
+import sys
+import os
+from PIL import Image
+import io
 
 # Page configuration
 st.set_page_config(
@@ -347,7 +351,7 @@ def create_3d_visualization():
 def main():
     # Header
     st.markdown('<h1 class="main-header">🚀 GeoAI Live Automation Pipeline</h1>', unsafe_allow_html=True)
-    st.markdown("### Real-time Building Footprint Detection for Alabama Cities")
+    st.markdown("### Real-time Building Footprint and Crop Detection for Alabama Cities")
     st.markdown("---")
 
     # Sidebar
@@ -361,13 +365,37 @@ def main():
             st.caption(f"Status: {api_status.get('status', 'Unknown')}")
         else:
             st.error("❌ Backend Disconnected")
+            st.caption("Running in fallback mode with simulated data")
+
+        # Load GeoAI client status from streamlit_backend
+        try:
+            # Import GeoAI library
+            sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+            from src.open_source_geo_ai import OpenSourceGeoAI
+            from streamlit_backend import load_geoai_client
+            
+            # Check GeoAI client
+            geoai_client = load_geoai_client()
+            if geoai_client:
+                if hasattr(geoai_client, 'detect_crops'):
+                    st.success("✅ GeoAI Library Connected")
+                    st.caption("Crop detection available")
+                else:
+                    st.warning("⚠️ GeoAI Library Partial")
+                    st.caption("Crop detection unavailable")
+            else:
+                st.error("❌ GeoAI Library Disconnected")
+                st.caption("Running in simulated mode")
+        except Exception as e:
+            st.error("❌ GeoAI Library Error")
+            st.caption(f"Error: {str(e)[:50]}...")
 
         st.markdown("---")
 
         # Navigation
         page = st.radio(
             "Select Dashboard:",
-            ["Live Pipeline", "Alabama Overview", "Analytics", "3D Visualization"],
+            ["Live Pipeline", "Alabama Overview", "Analytics", "3D Visualization", "Crop Detection"],
             label_visibility="collapsed"
         )
 
@@ -413,10 +441,201 @@ def main():
 
     elif page == "3D Visualization":
         create_3d_visualization()
+        
+    elif page == "Crop Detection":
+        st.subheader("🌾 Live Crop Detection Dashboard")
+        
+        # Import crop detection functionality
+        try:
+            import sys
+            import os
+            sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+            from streamlit_backend import load_geoai_client
+            
+            # Get GeoAI client
+            geoai_client = load_geoai_client()
+            
+            # Set up layout for crop detection
+            col1, col2 = st.columns(2)
+            
+            with col1:
+                # Region selection
+                regions = ["Alabama - Central Valley", "Alabama - Black Belt", 
+                          "Alabama - Tennessee Valley", "Alabama - Gulf Coast", 
+                          "Alabama - Piedmont Region"]
+                selected_region = st.selectbox("Select Agricultural Region", regions)
+                
+                # Analysis options
+                st.subheader("Analysis Settings")
+                detection_type = st.radio("Detection Type", 
+                                        ["Basic Detection", "Advanced Classification", "Full Analysis"])
+                
+                include_health = st.checkbox("Include Crop Health Assessment", value=True)
+                include_yield = st.checkbox("Include Yield Estimation", value=True)
+                
+                # Run analysis button
+                if st.button("🔍 Analyze Crops", type="primary"):
+                    if geoai_client:
+                        with st.spinner(f"Analyzing crops in {selected_region}..."):
+                            try:
+                                # Get mock image for the selected region
+                                mock_images = {
+                                    "Alabama - Central Valley": "https://extension.missouri.edu/media/wysiwyg/Extensiondata/NewsAdmin/Photos/2022/20220512-crops-lg.jpg",
+                                    "Alabama - Black Belt": "https://www.agriculture.com/sites/agriculture.com/files/styles/ratio_16_9_ms/public/field/image/353671086_2422-1.jpg",
+                                    "Alabama - Tennessee Valley": "https://wallpaperaccess.com/full/2774267.jpg",
+                                    "Alabama - Gulf Coast": "https://media.istockphoto.com/id/589274410/photo/corn-field-aerial.jpg?s=612x612&w=0&k=20&c=z9zHLexO_x7kKcQysM4J9bYyV_zEVCZ5W6QrsL9Gxyw=",
+                                    "Alabama - Piedmont Region": "https://miro.medium.com/v2/resize:fit:1400/1*RM5WEbMkKd3jECEXFjYsrQ.jpeg"
+                                }
+                                
+                                # Display the image
+                                image_url = mock_images.get(selected_region, mock_images["Alabama - Central Valley"])
+                                st.image(image_url, caption=f"Satellite imagery of {selected_region}", use_container_width=True)
+                                
+                                # Run detection with appropriate options
+                                if detection_type == "Basic Detection":
+                                    complexity = "basic"
+                                elif detection_type == "Advanced Classification":
+                                    complexity = "advanced"
+                                else:
+                                    complexity = "full"
+                                    
+                                # Call the detect_crops method
+                                results = geoai_client.detect_crops(
+                                    image_url, 
+                                    region=selected_region, 
+                                )
+                                
+                                # Display results
+                                st.subheader("🌽 Crop Detection Results")
+                                
+                                # Display crop types and confidence
+                                if results and "crop_detections" in results:
+                                    crops_df = pd.DataFrame(results["crop_detections"])
+                                    st.dataframe(crops_df, use_container_width=True)
+                                    
+                                    # Create visualization
+                                    fig = px.bar(
+                                        crops_df,
+                                        x="crop_type",
+                                        y="area_percentage",
+                                        color="confidence",
+                                        color_continuous_scale="Viridis",
+                                        title="Detected Crops by Area (%)",
+                                    )
+                                    st.plotly_chart(fig, use_container_width=True)
+                                    
+                                    # Display agricultural percentage
+                                    if "agricultural_area_percentage" in results:
+                                        agricultural_pct = results["agricultural_area_percentage"] * 100
+                                        
+                                        # Create gauge chart
+                                        fig = go.Figure(go.Indicator(
+                                            mode="gauge+number",
+                                            value=agricultural_pct,
+                                            title={'text': "Agricultural Land (%)"},
+                                            domain={'x': [0, 1], 'y': [0, 1]},
+                                            gauge={
+                                                'axis': {'range': [0, 100]},
+                                                'bar': {'color': "green"},
+                                                'steps': [
+                                                    {'range': [0, 30], 'color': "#ffdd99"},
+                                                    {'range': [30, 70], 'color': "#99cc99"},
+                                                    {'range': [70, 100], 'color': "#339933"}
+                                                ]
+                                            }
+                                        ))
+                                        st.plotly_chart(fig, use_container_width=True)
+                                else:
+                                    st.error("Failed to detect crops in the selected region")
+                                
+                            except Exception as e:
+                                st.error(f"Error during crop detection: {str(e)}")
+                    else:
+                        st.error("GeoAI client not available. Please check the connection and try again.")
+            
+            with col2:
+                st.subheader("Recent Detection Results")
+                
+                # Show mock recent detections
+                recent_data = [
+                    {"region": "Alabama - Central Valley", "date": "2023-10-15", "crops": "Corn (65%), Soybeans (25%)"},
+                    {"region": "Alabama - Gulf Coast", "date": "2023-10-14", "crops": "Cotton (48%), Peanuts (32%)"},
+                    {"region": "Alabama - Black Belt", "date": "2023-10-12", "crops": "Soybeans (54%), Wheat (31%)"},
+                    {"region": "Alabama - Tennessee Valley", "date": "2023-10-10", "crops": "Cotton (58%), Corn (22%)"},
+                ]
+                
+                # Display in a nice table
+                st.table(pd.DataFrame(recent_data))
+                
+                # Historical trend visualization
+                st.subheader("Historical Crop Distribution")
+                
+                # Create mock data for historical trends
+                years = [2019, 2020, 2021, 2022, 2023]
+                corn = [32, 35, 30, 28, 33]
+                soybeans = [28, 30, 35, 38, 40]
+                cotton = [25, 22, 20, 18, 15]
+                wheat = [15, 13, 15, 16, 12]
+                
+                # Create a DataFrame
+                hist_df = pd.DataFrame({
+                    'Year': years,
+                    'Corn': corn,
+                    'Soybeans': soybeans,
+                    'Cotton': cotton,
+                    'Wheat': wheat
+                })
+                
+                # Plot the data
+                fig = px.line(
+                    hist_df, 
+                    x='Year', 
+                    y=['Corn', 'Soybeans', 'Cotton', 'Wheat'],
+                    title="Crop Distribution Over Time (%)",
+                    markers=True,
+                    line_shape="spline"
+                )
+                st.plotly_chart(fig, use_container_width=True)
+                
+                # Add a map visualization
+                st.subheader("Agricultural Regions")
+                
+                # Create sample data for regions
+                region_data = [
+                    {"name": "Central Valley", "lat": 32.9, "lon": -86.6, "area": 1200, "main_crop": "Corn"},
+                    {"name": "Black Belt", "lat": 32.3, "lon": -87.4, "area": 950, "main_crop": "Soybeans"},
+                    {"name": "Tennessee Valley", "lat": 34.7, "lon": -86.8, "area": 850, "main_crop": "Cotton"},
+                    {"name": "Gulf Coast", "lat": 30.5, "lon": -88.0, "area": 720, "main_crop": "Peanuts"},
+                    {"name": "Piedmont Region", "lat": 33.2, "lon": -85.8, "area": 680, "main_crop": "Wheat"}
+                ]
+                
+                # Create DataFrame
+                region_df = pd.DataFrame(region_data)
+                
+                # Create map visualization
+                fig = px.scatter_mapbox(
+                    region_df,
+                    lat="lat",
+                    lon="lon",
+                    size="area",
+                    color="main_crop",
+                    hover_name="name",
+                    hover_data=["area", "main_crop"],
+                    zoom=6,
+                    center={"lat": 32.8, "lon": -86.8},
+                    title="Alabama Agricultural Regions"
+                )
+                
+                fig.update_layout(mapbox_style="open-street-map", height=400)
+                st.plotly_chart(fig, use_container_width=True)
+        
+        except Exception as e:
+            st.error(f"Error loading crop detection module: {str(e)}")
+            st.info("Please check that the GeoAI library is properly installed and configured.")
 
     # Footer
     st.markdown("---")
-    st.markdown("### 🛰️ Powered by NASA GeoAI Technology | Real-time Building Footprint Detection")
+    st.markdown("### 🛰️ Powered by NASA GeoAI Technology | Real-time Building Footprint & Crop Detection")
     st.caption(f"Last updated: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
 
     # Auto-refresh

@@ -1,0 +1,382 @@
+name: "🔒 Security Scanning"
+
+on:
+  schedule:
+    - cron: '0 2 * * *'  # Run daily at 2 AM
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+  workflow_dispatch:
+
+jobs:
+  dependency-scan:
+    name: 🔍 Python Dependency Security Scan
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: 📥 Checkout Repository
+        uses: actions/checkout@v4
+        
+      - name: 🐍 Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+          
+      - name: 📦 Install Dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install safety bandit
+          pip install -r requirements.txt
+          
+      - name: 🔎 Run Safety Check
+        run: safety check -r requirements.txt --full-report
+        continue-on-error: true  # Don't fail the build, just report findings
+        
+      - name: 📊 Generate Safety Report
+        run: |
+          mkdir -p security-reports
+          safety check -r requirements.txt --json > security-reports/safety-report.json
+          
+          # Create a markdown summary
+          echo "# Python Dependency Security Report" > security-reports/dependency-report.md
+          echo "" >> security-reports/dependency-report.md
+          echo "## Summary" >> security-reports/dependency-report.md
+          echo "" >> security-reports/dependency-report.md
+          echo "Scan completed on $(date)" >> security-reports/dependency-report.md
+          echo "" >> security-reports/dependency-report.md
+          
+          # Extract and format findings
+          python -c "
+import json
+import sys
+
+try:
+    with open('security-reports/safety-report.json') as f:
+        data = json.load(f)
+    
+    if len(data) == 0:
+        print('No vulnerabilities found.')
+        with open('security-reports/dependency-report.md', 'a') as report:
+            report.write('✅ No vulnerabilities found.\n')
+        sys.exit(0)
+        
+    print(f'Found {len(data)} vulnerabilities.')
+    with open('security-reports/dependency-report.md', 'a') as report:
+        report.write(f'⚠️ Found {len(data)} vulnerabilities.\n\n')
+        report.write('| Package | Vulnerable Version | Safe Version | Severity | Advisory |\n')
+        report.write('| ------- | ------------------ | ------------ | -------- | -------- |\n')
+        
+        for vuln in data:
+            package = vuln[0]
+            affected_version = vuln[1]
+            safe_version = vuln[3] if len(vuln) > 3 else 'Not specified'
+            advisory = vuln[4] if len(vuln) > 4 else 'No details provided'
+            severity = 'High' if 'high' in advisory.lower() else ('Medium' if 'medium' in advisory.lower() else 'Low')
+            
+            report.write(f'| {package} | {affected_version} | {safe_version} | {severity} | {advisory.replace(\"|\", \"\\|\")} |\n')
+except Exception as e:
+    print(f'Error generating report: {e}')
+    with open('security-reports/dependency-report.md', 'a') as report:
+        report.write(f'❌ Error generating report: {e}\n')
+" || echo "⚠️ Failed to process safety report"
+          
+      - name: 🔍 Run Bandit Security Check
+        run: |
+          bandit -r src backend -f json -o security-reports/bandit-report.json
+          
+          # Create a markdown summary
+          echo "# Python Code Security Scan Report" > security-reports/code-scan-report.md
+          echo "" >> security-reports/code-scan-report.md
+          echo "## Summary" >> security-reports/code-scan-report.md
+          echo "" >> security-reports/code-scan-report.md
+          
+          # Extract and format findings
+          python -c "
+import json
+import sys
+
+try:
+    with open('security-reports/bandit-report.json') as f:
+        data = json.load(f)
+    
+    results = data.get('results', [])
+    
+    if len(results) == 0:
+        print('No security issues found in code.')
+        with open('security-reports/code-scan-report.md', 'a') as report:
+            report.write('✅ No security issues found in code.\n')
+        sys.exit(0)
+    
+    metrics = data.get('metrics', {})
+    
+    # Add metrics summary
+    with open('security-reports/code-scan-report.md', 'a') as report:
+        report.write(f'Scanned files: {metrics.get(\"_totals\", {}).get(\"loc\", \"unknown\")} lines of code\n\n')
+        report.write(f'⚠️ Found {len(results)} security issues.\n\n')
+        
+        # Add severity distribution
+        severity_metrics = {
+            'HIGH': 0,
+            'MEDIUM': 0,
+            'LOW': 0
+        }
+        
+        for result in results:
+            severity = result.get('issue_severity', 'UNKNOWN').upper()
+            if severity in severity_metrics:
+                severity_metrics[severity] += 1
+        
+        report.write('## Severity Distribution\n\n')
+        report.write('| Severity | Count |\n')
+        report.write('| -------- | ----- |\n')
+        for severity, count in severity_metrics.items():
+            report.write(f'| {severity} | {count} |\n')
+        
+        report.write('\n## Detailed Findings\n\n')
+        
+        # Add detailed findings
+        for i, result in enumerate(results[:10]):  # Limit to 10 findings for readability
+            report.write(f'### Issue {i+1}: {result.get(\"issue_text\", \"Unknown Issue\")}\n\n')
+            report.write(f'- **Severity**: {result.get(\"issue_severity\", \"Unknown\")}\n')
+            report.write(f'- **Confidence**: {result.get(\"issue_confidence\", \"Unknown\")}\n')
+            report.write(f'- **File**: {result.get(\"filename\", \"Unknown file\")}\n')
+            report.write(f'- **Line**: {result.get(\"line_number\", \"Unknown\")}\n')
+            report.write(f'- **CWE**: {result.get(\"cwe\", {}).get(\"id\", \"Unknown\")}\n\n')
+            
+            code = result.get('code', 'No code available')
+            report.write('```python\n')
+            report.write(code)
+            report.write('\n```\n\n')
+        
+        if len(results) > 10:
+            report.write(f'... and {len(results) - 10} more issues. See full report for details.\n')
+except Exception as e:
+    print(f'Error generating report: {e}')
+    with open('security-reports/code-scan-report.md', 'a') as report:
+        report.write(f'❌ Error generating report: {e}\n')
+" || echo "⚠️ Failed to process bandit report"
+        continue-on-error: true
+          
+      - name: 📤 Upload Security Reports
+        uses: actions/upload-artifact@v3
+        with:
+          name: security-reports
+          path: security-reports/
+          retention-days: 7
+          
+  docker-scan:
+    name: 🐳 Docker Image Security Scan
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: 📥 Checkout Repository
+        uses: actions/checkout@v4
+        
+      - name: 🐳 Set up Docker Buildx
+        uses: docker/setup-buildx-action@v2
+        
+      - name: 🏗️ Build Docker Image
+        run: |
+          docker build -t geoai-backend:test -f Dockerfile.backend .
+          
+      - name: 🔎 Run Trivy vulnerability scanner
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: 'geoai-backend:test'
+          format: 'sarif'
+          output: 'trivy-results.sarif'
+          severity: 'CRITICAL,HIGH'
+          
+      - name: 📊 Generate Trivy HTML Report
+        run: |
+          mkdir -p security-reports
+          
+          # Install Trivy
+          curl -sfL https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh | sh -s -- -b /usr/local/bin v0.20.2
+          
+          # Generate HTML report
+          trivy image --format template --template "@contrib/html.tpl" -o security-reports/docker-scan-report.html geoai-backend:test
+          
+          # Generate JSON report
+          trivy image --format json -o security-reports/docker-scan-report.json geoai-backend:test
+          
+          # Create a markdown summary
+          echo "# Docker Image Security Scan Report" > security-reports/docker-scan-summary.md
+          echo "" >> security-reports/docker-scan-summary.md
+          echo "## Summary" >> security-reports/docker-scan-summary.md
+          echo "" >> security-reports/docker-scan-summary.md
+          
+          # Extract and format findings
+          python -c "
+import json
+import sys
+
+try:
+    with open('security-reports/docker-scan-report.json') as f:
+        data = json.load(f)
+    
+    results = data.get('Results', [])
+    
+    total_vulns = sum(len(r.get('Vulnerabilities', [])) for r in results if 'Vulnerabilities' in r)
+    
+    with open('security-reports/docker-scan-summary.md', 'a') as report:
+        if total_vulns == 0:
+            report.write('✅ No vulnerabilities found in Docker image.\n')
+            sys.exit(0)
+        
+        report.write(f'⚠️ Found {total_vulns} vulnerabilities in Docker image.\n\n')
+        
+        # Add severity distribution
+        severity_counts = {
+            'CRITICAL': 0,
+            'HIGH': 0,
+            'MEDIUM': 0,
+            'LOW': 0,
+            'UNKNOWN': 0
+        }
+        
+        for result in results:
+            for vuln in result.get('Vulnerabilities', []):
+                severity = vuln.get('Severity', 'UNKNOWN').upper()
+                if severity in severity_counts:
+                    severity_counts[severity] += 1
+        
+        report.write('## Severity Distribution\n\n')
+        report.write('| Severity | Count |\n')
+        report.write('| -------- | ----- |\n')
+        for severity, count in severity_counts.items():
+            report.write(f'| {severity} | {count} |\n')
+        
+        report.write('\n## Top Critical/High Vulnerabilities\n\n')
+        
+        # Find top vulnerabilities
+        all_vulns = []
+        for result in results:
+            for vuln in result.get('Vulnerabilities', []):
+                if vuln.get('Severity', '').upper() in ['CRITICAL', 'HIGH']:
+                    all_vulns.append(vuln)
+        
+        # Sort by severity (Critical first, then High)
+        all_vulns.sort(key=lambda v: 0 if v.get('Severity', '').upper() == 'CRITICAL' else 1)
+        
+        # Show top 10
+        top_vulns = all_vulns[:10]
+        
+        if top_vulns:
+            report.write('| ID | Package | Severity | Fixed Version | Title |\n')
+            report.write('| -- | ------- | -------- | ------------- | ----- |\n')
+            
+            for vuln in top_vulns:
+                vuln_id = vuln.get('VulnerabilityID', 'Unknown')
+                package = vuln.get('PkgName', 'Unknown')
+                severity = vuln.get('Severity', 'Unknown')
+                fixed_version = vuln.get('FixedVersion', 'Not available')
+                title = vuln.get('Title', 'No description available').replace('|', '\\|')
+                
+                report.write(f'| {vuln_id} | {package} | {severity} | {fixed_version} | {title} |\n')
+            
+            if len(all_vulns) > 10:
+                report.write(f'\n... and {len(all_vulns) - 10} more Critical/High vulnerabilities.\n')
+        else:
+            report.write('No Critical or High vulnerabilities found.\n')
+except Exception as e:
+    print(f'Error generating report: {e}')
+    with open('security-reports/docker-scan-summary.md', 'a') as report:
+        report.write(f'❌ Error generating report: {e}\n')
+" || echo "⚠️ Failed to process Trivy report"
+        continue-on-error: true
+          
+      - name: 📤 Upload Docker Scan Reports
+        uses: actions/upload-artifact@v3
+        with:
+          name: docker-scan-reports
+          path: security-reports/
+          retention-days: 7
+          
+      - name: 📤 Upload Trivy SARIF report
+        uses: github/codeql-action/upload-sarif@v2
+        with:
+          sarif_file: 'trivy-results.sarif'
+          category: 'docker-image'
+
+  security-summary:
+    name: 🛡️ Security Scan Summary
+    runs-on: ubuntu-latest
+    needs: [dependency-scan, docker-scan]
+    if: always()
+    
+    steps:
+      - name: 📥 Download Dependency Scan Reports
+        uses: actions/download-artifact@v3
+        with:
+          name: security-reports
+          path: combined-reports/dependency
+        continue-on-error: true
+        
+      - name: 📥 Download Docker Scan Reports
+        uses: actions/download-artifact@v3
+        with:
+          name: docker-scan-reports
+          path: combined-reports/docker
+        continue-on-error: true
+        
+      - name: 📊 Generate Combined Security Report
+        run: |
+          mkdir -p security-summary
+          
+          echo "# Combined Security Scan Report" > security-summary/security-summary.md
+          echo "" >> security-summary/security-summary.md
+          echo "## Overview" >> security-summary/security-summary.md
+          echo "" >> security-summary/security-summary.md
+          echo "Security scan completed on $(date)" >> security-summary/security-summary.md
+          echo "" >> security-summary/security-summary.md
+          
+          # Add dependency scan results
+          echo "## Python Dependency Security Results" >> security-summary/security-summary.md
+          echo "" >> security-summary/security-summary.md
+          if [ -f "combined-reports/dependency/dependency-report.md" ]; then
+            tail -n +3 combined-reports/dependency/dependency-report.md >> security-summary/security-summary.md
+          else
+            echo "⚠️ No dependency scan results found." >> security-summary/security-summary.md
+          fi
+          
+          echo "" >> security-summary/security-summary.md
+          echo "## Python Code Security Results" >> security-summary/security-summary.md
+          echo "" >> security-summary/security-summary.md
+          if [ -f "combined-reports/dependency/code-scan-report.md" ]; then
+            tail -n +3 combined-reports/dependency/code-scan-report.md >> security-summary/security-summary.md
+          else
+            echo "⚠️ No code scan results found." >> security-summary/security-summary.md
+          fi
+          
+          echo "" >> security-summary/security-summary.md
+          echo "## Docker Image Security Results" >> security-summary/security-summary.md
+          echo "" >> security-summary/security-summary.md
+          if [ -f "combined-reports/docker/docker-scan-summary.md" ]; then
+            tail -n +3 combined-reports/docker/docker-scan-summary.md >> security-summary/security-summary.md
+          else
+            echo "⚠️ No Docker scan results found." >> security-summary/security-summary.md
+          fi
+          
+          echo "" >> security-summary/security-summary.md
+          echo "## Recommendations" >> security-summary/security-summary.md
+          echo "" >> security-summary/security-summary.md
+          echo "1. Review and address Critical and High severity vulnerabilities first" >> security-summary/security-summary.md
+          echo "2. Update dependencies to their latest secure versions" >> security-summary/security-summary.md
+          echo "3. Consider using slimmer base Docker images" >> security-summary/security-summary.md
+          echo "4. Implement security scanning as part of local development workflow" >> security-summary/security-summary.md
+          
+      - name: 📤 Upload Combined Security Report
+        uses: actions/upload-artifact@v3
+        with:
+          name: security-summary
+          path: security-summary/
+          retention-days: 14
+          
+      - name: 📊 Create Security Comment on PR
+        if: github.event_name == 'pull_request'
+        uses: peter-evans/create-or-update-comment@v3
+        with:
+          issue-number: ${{ github.event.pull_request.number }}
+          body-file: security-summary/security-summary.md

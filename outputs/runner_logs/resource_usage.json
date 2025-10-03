@@ -1,0 +1,25 @@
+{
+  "timestamp": "2025-10-02T03:52:05.539372",
+  "system": {
+    "cpu_percent": 5.2,
+    "memory_percent": 95.5
+  },
+  "processes": {
+    "streamlit": {
+      "status": "stopped",
+      "exit_code": 1
+    },
+    "frontend": {
+      "status": "stopped",
+      "exit_code": 1
+    },
+    "monitoring": {
+      "status": "stopped",
+      "exit_code": 1
+    },
+    "monitoring_dashboard": {
+      "status": "stopped",
+      "exit_code": 1
+    }
+  }
+}
