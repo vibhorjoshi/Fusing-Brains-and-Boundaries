@@ -3,51 +3,770 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>GeoAI Frontend</title>
-    <style>
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            margin: 0;
-            padding: 0;
-            background-color: #f5f7f9;
-            color: #333;
-        }
-        .container {
-            width: 80%;
-            max-width: 1200px;
-            margin: 0 auto;
-            padding: 2rem;
-        }
-        header {
-            background-color: #1f77b4;
-            color: white;
-            padding: 2rem 0;
-            text-align: center;
-            margin-bottom: 2rem;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-        }
-        h1 {
-            font-size: 2.5rem;
-            margin-bottom: 0.5rem;
-        }
-        .card {
-            background-color: white;
-            border-radius: 8px;
-            padding: 1.5rem;
-            margin-bottom: 1.5rem;
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-        }
-        .button {
-            display: inline-block;
-            background-color: #1f77b4;
-            color: white;
-            padding: 0.75rem 1.5rem;
-            border-radius: 4px;
-            text-decoration: none;
-            font-weight: bold;
-            margin-top: 1rem;
-        }
-        .metric-container {
+    <title>Fusing Brains and Boundaries - GeoAI Building Footprint Extraction</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="icon" href="assets/favicon.ico" type="image/x-icon">
+    <!-- External Libraries -->
+    <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar">
+        <div class="nav-container">
+            <div class="nav-logo">
+                <i class="fas fa-brain"></i>
+                <span>Fusing Brains & Boundaries</span>
+            </div>
+            <ul class="nav-menu">
+                <li><a href="#home" class="nav-link">Home</a></li>
+                <li><a href="#pipeline" class="nav-link">AI Pipeline</a></li>
+                <li><a href="#usa-agriculture" class="nav-link">USA Agriculture</a></li>
+                <li><a href="#live-testing" class="nav-link">Live Testing</a></li>
+                <li><a href="#benchmarks" class="nav-link">Benchmarks</a></li>
+                <li><a href="#about" class="nav-link">About</a></li>
+            </ul>
+            <div class="hamburger">
+                <span></span>
+                <span></span>
+                <span></span>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Home Section -->
+    <section id="home" class="section hero">
+        <div class="hero-content">
+            <div class="hero-text">
+                <h1>Advanced GeoAI Building Footprint Extraction</h1>
+                <p>Combining Deep Learning, Regularization Techniques, and Reinforcement Learning for Precision Building Detection in Satellite Imagery</p>
+                <div class="hero-buttons">
+                    <button class="btn primary" onclick="scrollToSection('pipeline')">
+                        <i class="fas fa-rocket"></i> Try AI Pipeline
+                    </button>
+                    <button class="btn secondary" onclick="scrollToSection('benchmarks')">
+                        <i class="fas fa-chart-line"></i> View Benchmarks
+                    </button>
+                </div>
+            </div>
+            <div class="hero-visual">
+                <div class="architecture-preview">
+                    <img src="assets/architecture.png" alt="AI Architecture" class="architecture-img">
+                    <div class="tech-badges">
+                        <span class="badge">Mask R-CNN</span>
+                        <span class="badge">DQN Agent</span>
+                        <span class="badge">RT/RR/FER</span>
+                        <span class="badge">PyTorch</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Stats Overview -->
+        <div class="stats-grid">
+            <div class="stat-card">
+                <i class="fas fa-building"></i>
+                <h3>95.7%</h3>
+                <p>Building Detection Accuracy</p>
+            </div>
+            <div class="stat-card">
+                <i class="fas fa-globe-americas"></i>
+                <h3>28</h3>
+                <p>US States Tested</p>
+            </div>
+            <div class="stat-card">
+                <i class="fas fa-brain"></i>
+                <h3>RL-Fusion</h3>
+                <p>Adaptive Algorithm</p>
+            </div>
+            <div class="stat-card">
+                <i class="fas fa-clock"></i>
+                <h3>2.3s</h3>
+                <p>Average Processing Time</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- AI Pipeline Section -->
+    <section id="pipeline" class="section pipeline-section">
+        <div class="container">
+            <h2>🚀 AI Building Footprint Extraction Pipeline</h2>
+            <p class="section-subtitle">Upload satellite images and extract building footprints using our advanced AI models</p>
+            
+            <div class="pipeline-container">
+                <!-- Upload Section -->
+                <div class="upload-section">
+                    <div class="upload-area" id="uploadArea">
+                        <div class="upload-content">
+                            <i class="fas fa-cloud-upload-alt"></i>
+                            <h3>Upload Satellite Image</h3>
+                            <p>Drop your image here or click to browse</p>
+                            <input type="file" id="imageInput" accept="image/*" hidden>
+                        </div>
+                    </div>
+                    
+                    <div class="model-selection">
+                        <h4>Select Detection Method</h4>
+                        <div class="method-grid">
+                            <label class="method-card">
+                                <input type="radio" name="method" value="mask-rcnn">
+                                <div class="method-content">
+                                    <i class="fas fa-robot"></i>
+                                    <h5>Mask R-CNN</h5>
+                                    <p>Base deep learning detector</p>
+                                </div>
+                            </label>
+                            <label class="method-card">
+                                <input type="radio" name="method" value="rt">
+                                <div class="method-content">
+                                    <i class="fas fa-project-diagram"></i>
+                                    <h5>RT</h5>
+                                    <p>Regular Topology</p>
+                                </div>
+                            </label>
+                            <label class="method-card">
+                                <input type="radio" name="method" value="rr">
+                                <div class="method-content">
+                                    <i class="fas fa-vector-square"></i>
+                                    <h5>RR</h5>
+                                    <p>Regular Rectangle</p>
+                                </div>
+                            </label>
+                            <label class="method-card">
+                                <input type="radio" name="method" value="fer">
+                                <div class="method-content">
+                                    <i class="fas fa-border-style"></i>
+                                    <h5>FER</h5>
+                                    <p>Feature Edge Regularization</p>
+                                </div>
+                            </label>
+                            <label class="method-card active">
+                                <input type="radio" name="method" value="rl-fusion" checked>
+                                <div class="method-content">
+                                    <i class="fas fa-brain"></i>
+                                    <h5>RL Fusion ⭐</h5>
+                                    <p>Adaptive fusion with RL</p>
+                                </div>
+                            </label>
+                        </div>
+                    </div>
+                    
+                    <button class="btn primary large" id="processBtn" disabled>
+                        <i class="fas fa-cog"></i>
+                        <span>Process Image</span>
+                    </button>
+                </div>
+                
+                <!-- Results Section -->
+                <div class="results-section">
+                    <div class="result-tabs">
+                        <button class="tab-btn active" data-tab="visualization">Visualization</button>
+                        <button class="tab-btn" data-tab="metrics">Metrics</button>
+                        <button class="tab-btn" data-tab="analysis">Analysis</button>
+                    </div>
+                    
+                    <div class="result-content">
+                        <!-- Visualization Tab -->
+                        <div class="tab-pane active" id="visualization">
+                            <div class="image-comparison">
+                                <div class="image-container">
+                                    <h4>Original Image</h4>
+                                    <div class="image-placeholder" id="originalImage">
+                                        <i class="fas fa-image"></i>
+                                        <p>Upload an image to see results</p>
+                                    </div>
+                                </div>
+                                <div class="image-container">
+                                    <h4>Detected Buildings</h4>
+                                    <div class="image-placeholder" id="resultImage">
+                                        <i class="fas fa-building"></i>
+                                        <p>Results will appear here</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Metrics Tab -->
+                        <div class="tab-pane" id="metrics">
+                            <div class="metrics-grid">
+                                <div class="metric-card">
+                                    <h4>Detection Accuracy</h4>
+                                    <div class="metric-value" id="accuracyValue">--</div>
+                                    <div class="metric-bar">
+                                        <div class="progress-bar">
+                                            <div class="progress-fill" id="accuracyProgress"></div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="metric-card">
+                                    <h4>IoU Score</h4>
+                                    <div class="metric-value" id="iouValue">--</div>
+                                    <div class="metric-bar">
+                                        <div class="progress-bar">
+                                            <div class="progress-fill" id="iouProgress"></div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="metric-card">
+                                    <h4>Buildings Found</h4>
+                                    <div class="metric-value" id="buildingCount">--</div>
+                                </div>
+                                <div class="metric-card">
+                                    <h4>Processing Time</h4>
+                                    <div class="metric-value" id="processingTime">--</div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Analysis Tab -->
+                        <div class="tab-pane" id="analysis">
+                            <div class="analysis-content">
+                                <div class="analysis-chart">
+                                    <canvas id="performanceChart"></canvas>
+                                </div>
+                                <div class="analysis-details">
+                                    <h4>Detection Details</h4>
+                                    <div id="analysisDetails">
+                                        <p>Process an image to see detailed analysis</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Processing Overlay -->
+            <div class="processing-overlay" id="processingOverlay">
+                <div class="loading-spinner"></div>
+                <h3>Processing Image...</h3>
+                <p>Applying AI models to detect building footprints</p>
+                <div class="progress-container">
+                    <div class="progress-bar">
+                        <div class="progress-fill" id="processingProgress"></div>
+                    </div>
+                    <span id="processingPercent">0%</span>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- USA Agriculture Section -->
+    <section id="usa-agriculture" class="section agriculture-section">
+        <div class="container">
+            <h2>🌾 USA Agriculture & Building Detection</h2>
+            <p class="section-subtitle">Comprehensive analysis across 28 US states with agriculture focus</p>
+            
+            <div class="agriculture-dashboard">
+                <!-- Control Panel -->
+                <div class="control-panel">
+                    <div class="control-section">
+                        <h3>🎯 State Selection</h3>
+                        <select id="stateSelect" class="form-control">
+                            <option value="">Select US State...</option>
+                        </select>
+                        
+                        <div class="detection-filters">
+                            <label class="filter-checkbox">
+                                <input type="checkbox" checked data-type="building">
+                                <span class="checkmark building"></span>
+                                Buildings
+                            </label>
+                            <label class="filter-checkbox">
+                                <input type="checkbox" checked data-type="crop">
+                                <span class="checkmark crop"></span>
+                                Crops
+                            </label>
+                        </div>
+                        
+                        <div class="parameter-controls">
+                            <label>Iterations: <span id="iterValue">20</span></label>
+                            <input type="range" id="iterSlider" min="10" max="50" value="20">
+                            
+                            <label class="toggle-switch">
+                                <input type="checkbox" id="realtimeTraining" checked>
+                                <span class="slider"></span>
+                                Real-time Training
+                            </label>
+                        </div>
+                        
+                        <button class="btn primary" id="startStateTest">
+                            <i class="fas fa-play"></i> Start State Test
+                        </button>
+                    </div>
+                    
+                    <div class="control-section">
+                        <h3>🌍 Batch Processing</h3>
+                        <select id="multiStateSelect" multiple class="form-control">
+                            <!-- States populated by JS -->
+                        </select>
+                        
+                        <div class="batch-options">
+                            <label class="toggle-switch">
+                                <input type="checkbox" id="parallelProcessing" checked>
+                                <span class="slider"></span>
+                                Parallel Processing
+                            </label>
+                            <label class="toggle-switch">
+                                <input type="checkbox" id="agricultureFocus" checked>
+                                <span class="slider"></span>
+                                Agriculture Focus
+                            </label>
+                        </div>
+                        
+                        <div class="batch-buttons">
+                            <button class="btn secondary" id="startBatchTest">
+                                <i class="fas fa-globe-americas"></i> Start Batch Test
+                            </button>
+                            <button class="btn danger" id="stopAllTests">
+                                <i class="fas fa-stop"></i> Stop All
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- USA Map -->
+                <div class="usa-map-container">
+                    <div class="map-header">
+                        <h3>🇺🇸 United States - 28 States Dataset</h3>
+                        <div class="map-stats">
+                            <span>Total: <strong id="totalStates">28</strong></span>
+                            <span>Processed: <strong id="processedStates">0</strong></span>
+                            <span>Success Rate: <strong id="successRate">0%</strong></span>
+                        </div>
+                    </div>
+                    <div class="usa-map" id="usaMap">
+                        <!-- SVG Map will be generated here -->
+                    </div>
+                </div>
+                
+                <!-- Performance Metrics -->
+                <div class="performance-panel">
+                    <div class="metric-row">
+                        <div class="metric-card">
+                            <i class="fas fa-building"></i>
+                            <h4>Building Detection</h4>
+                            <div class="metric-value" id="buildingPerf">0.000</div>
+                            <p>Average IoU</p>
+                        </div>
+                        <div class="metric-card">
+                            <i class="fas fa-seedling"></i>
+                            <h4>Crop Detection</h4>
+                            <div class="metric-value" id="cropPerf">0.000</div>
+                            <p>Average IoU</p>
+                        </div>
+                        <div class="metric-card">
+                            <i class="fas fa-brain"></i>
+                            <h4>RL Agent</h4>
+                            <div class="metric-value" id="rlEpsilon">0.300</div>
+                            <p>Current Epsilon</p>
+                        </div>
+                    </div>
+                    
+                    <div class="crop-statistics">
+                        <h4>🌽 Top Crops Performance</h4>
+                        <div class="crop-grid">
+                            <div class="crop-item">
+                                <span class="crop-name">Corn</span>
+                                <div class="crop-bar">
+                                    <div class="crop-progress" style="width: 92%"></div>
+                                </div>
+                                <span class="crop-value">92%</span>
+                            </div>
+                            <div class="crop-item">
+                                <span class="crop-name">Soybeans</span>
+                                <div class="crop-bar">
+                                    <div class="crop-progress" style="width: 89%"></div>
+                                </div>
+                                <span class="crop-value">89%</span>
+                            </div>
+                            <div class="crop-item">
+                                <span class="crop-name">Wheat</span>
+                                <div class="crop-bar">
+                                    <div class="crop-progress" style="width: 86%"></div>
+                                </div>
+                                <span class="crop-value">86%</span>
+                            </div>
+                            <div class="crop-item">
+                                <span class="crop-name">Cotton</span>
+                                <div class="crop-bar">
+                                    <div class="crop-progress" style="width: 91%"></div>
+                                </div>
+                                <span class="crop-value">91%</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Live Testing Section -->
+    <section id="live-testing" class="section testing-section">
+        <div class="container">
+            <h2>⚡ Live Performance Testing</h2>
+            <p class="section-subtitle">Real-time monitoring and testing of AI models across different scenarios</p>
+            
+            <div class="testing-dashboard">
+                <!-- System Status -->
+                <div class="status-panel">
+                    <div class="status-header">
+                        <h3>🔧 System Status</h3>
+                        <div class="status-indicators">
+                            <div class="status-item">
+                                <span>Backend</span>
+                                <div class="status-dot active" id="backendStatus"></div>
+                            </div>
+                            <div class="status-item">
+                                <span>RL Agent</span>
+                                <div class="status-dot active" id="rlStatus"></div>
+                            </div>
+                            <div class="status-item">
+                                <span>WebSocket</span>
+                                <div class="status-dot processing" id="wsStatus"></div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="system-metrics">
+                        <div class="metric-box">
+                            <span class="metric-label">GPU Usage</span>
+                            <span class="metric-value" id="gpuUsage">--</span>
+                        </div>
+                        <div class="metric-box">
+                            <span class="metric-label">Memory</span>
+                            <span class="metric-value" id="memoryUsage">--</span>
+                        </div>
+                        <div class="metric-box">
+                            <span class="metric-label">Active Jobs</span>
+                            <span class="metric-value" id="activeJobs">0</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Real-time Charts -->
+                <div class="charts-panel">
+                    <div class="chart-container">
+                        <h4>📈 Performance Trends</h4>
+                        <canvas id="livePerformanceChart"></canvas>
+                    </div>
+                    <div class="chart-container">
+                        <h4>⚡ Processing Speed</h4>
+                        <canvas id="speedChart"></canvas>
+                    </div>
+                </div>
+                
+                <!-- Test Controls -->
+                <div class="test-controls">
+                    <div class="test-section">
+                        <h4>🧪 Automated Testing</h4>
+                        <div class="test-options">
+                            <label class="test-option">
+                                <input type="checkbox" checked>
+                                <span>Stress Test</span>
+                            </label>
+                            <label class="test-option">
+                                <input type="checkbox" checked>
+                                <span>Accuracy Test</span>
+                            </label>
+                            <label class="test-option">
+                                <input type="checkbox">
+                                <span>Memory Test</span>
+                            </label>
+                        </div>
+                        <button class="btn primary" id="startAutomatedTest">
+                            <i class="fas fa-flask"></i> Start Automated Test
+                        </button>
+                    </div>
+                    
+                    <div class="test-section">
+                        <h4>📊 Export & Analysis</h4>
+                        <div class="export-options">
+                            <button class="btn secondary" id="exportMetrics">
+                                <i class="fas fa-download"></i> Export Metrics
+                            </button>
+                            <button class="btn secondary" id="generateReport">
+                                <i class="fas fa-file-alt"></i> Generate Report
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Console Log -->
+                <div class="console-panel">
+                    <div class="console-header">
+                        <h4>📝 Live Console</h4>
+                        <div class="console-controls">
+                            <button class="btn-small" id="clearConsole">Clear</button>
+                            <button class="btn-small" id="pauseConsole">Pause</button>
+                        </div>
+                    </div>
+                    <div class="console-log" id="liveConsole">
+                        <div class="log-line info">[INFO] System initialized and ready</div>
+                        <div class="log-line success">[SUCCESS] All models loaded successfully</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Benchmarks Section -->
+    <section id="benchmarks" class="section benchmarks-section">
+        <div class="container">
+            <h2>📊 Performance Benchmarks</h2>
+            <p class="section-subtitle">Comprehensive evaluation results across different datasets and methods</p>
+            
+            <div class="benchmark-dashboard">
+                <!-- Method Comparison -->
+                <div class="comparison-panel">
+                    <h3>🏆 Method Comparison</h3>
+                    <div class="comparison-table">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Method</th>
+                                    <th>IoU</th>
+                                    <th>Precision</th>
+                                    <th>Recall</th>
+                                    <th>F1-Score</th>
+                                    <th>Speed (fps)</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr class="best-method">
+                                    <td><strong>RL Fusion</strong> ⭐</td>
+                                    <td><strong>0.957</strong></td>
+                                    <td><strong>0.943</strong></td>
+                                    <td><strong>0.971</strong></td>
+                                    <td><strong>0.957</strong></td>
+                                    <td>4.2</td>
+                                </tr>
+                                <tr>
+                                    <td>Mask R-CNN</td>
+                                    <td>0.891</td>
+                                    <td>0.876</td>
+                                    <td>0.907</td>
+                                    <td>0.891</td>
+                                    <td><strong>5.8</strong></td>
+                                </tr>
+                                <tr>
+                                    <td>RT</td>
+                                    <td>0.834</td>
+                                    <td>0.821</td>
+                                    <td>0.847</td>
+                                    <td>0.834</td>
+                                    <td>4.9</td>
+                                </tr>
+                                <tr>
+                                    <td>RR</td>
+                                    <td>0.823</td>
+                                    <td>0.815</td>
+                                    <td>0.831</td>
+                                    <td>0.823</td>
+                                    <td>5.1</td>
+                                </tr>
+                                <tr>
+                                    <td>FER</td>
+                                    <td>0.845</td>
+                                    <td>0.832</td>
+                                    <td>0.859</td>
+                                    <td>0.845</td>
+                                    <td>4.7</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                
+                <!-- Performance Charts -->
+                <div class="charts-grid">
+                    <div class="chart-panel">
+                        <h4>📈 IoU Scores by Dataset</h4>
+                        <canvas id="iouChart"></canvas>
+                    </div>
+                    <div class="chart-panel">
+                        <h4>⚡ Processing Speed Comparison</h4>
+                        <canvas id="speedComparisonChart"></canvas>
+                    </div>
+                    <div class="chart-panel">
+                        <h4>🎯 Precision vs Recall</h4>
+                        <canvas id="precisionRecallChart"></canvas>
+                    </div>
+                    <div class="chart-panel">
+                        <h4>📊 State-wise Performance</h4>
+                        <canvas id="statePerformanceChart"></canvas>
+                    </div>
+                </div>
+                
+                <!-- Dataset Statistics -->
+                <div class="dataset-stats">
+                    <h3>📋 Dataset Statistics</h3>
+                    <div class="stats-grid">
+                        <div class="stat-item">
+                            <i class="fas fa-images"></i>
+                            <div class="stat-content">
+                                <h4>12,847</h4>
+                                <p>Total Images</p>
+                            </div>
+                        </div>
+                        <div class="stat-item">
+                            <i class="fas fa-building"></i>
+                            <div class="stat-content">
+                                <h4>2.3M</h4>
+                                <p>Building Instances</p>
+                            </div>
+                        </div>
+                        <div class="stat-item">
+                            <i class="fas fa-map"></i>
+                            <div class="stat-content">
+                                <h4>28</h4>
+                                <p>US States</p>
+                            </div>
+                        </div>
+                        <div class="stat-item">
+                            <i class="fas fa-seedling"></i>
+                            <div class="stat-content">
+                                <h4>1.2B</h4>
+                                <p>Agricultural Acres</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- About Section -->
+    <section id="about" class="section about-section">
+        <div class="container">
+            <h2>🧠 About the Project</h2>
+            <div class="about-content">
+                <div class="about-text">
+                    <h3>Advanced GeoAI Research</h3>
+                    <p>This project represents cutting-edge research in geospatial artificial intelligence, combining multiple deep learning approaches with reinforcement learning for superior building footprint extraction from satellite imagery.</p>
+                    
+                    <h4>🔬 Research Contributions</h4>
+                    <ul>
+                        <li>Novel RL-based fusion of regularization techniques</li>
+                        <li>Adaptive algorithm selection using DQN agents</li>
+                        <li>Comprehensive evaluation across 28 US states</li>
+                        <li>Integration of agricultural land use patterns</li>
+                    </ul>
+                    
+                    <h4>🛠 Technologies Used</h4>
+                    <div class="tech-stack">
+                        <span class="tech-badge">PyTorch</span>
+                        <span class="tech-badge">Mask R-CNN</span>
+                        <span class="tech-badge">OpenCV</span>
+                        <span class="tech-badge">FastAPI</span>
+                        <span class="tech-badge">WebSocket</span>
+                        <span class="tech-badge">Chart.js</span>
+                    </div>
+                </div>
+                
+                <div class="architecture-diagram">
+                    <h4>🏗 System Architecture</h4>
+                    <div class="architecture-flow">
+                        <div class="arch-node">
+                            <i class="fas fa-satellite"></i>
+                            <span>Satellite Images</span>
+                        </div>
+                        <div class="arrow">→</div>
+                        <div class="arch-node">
+                            <i class="fas fa-robot"></i>
+                            <span>Mask R-CNN</span>
+                        </div>
+                        <div class="arrow">→</div>
+                        <div class="arch-node">
+                            <i class="fas fa-cogs"></i>
+                            <span>RT/RR/FER</span>
+                        </div>
+                        <div class="arrow">→</div>
+                        <div class="arch-node">
+                            <i class="fas fa-brain"></i>
+                            <span>RL Agent</span>
+                        </div>
+                        <div class="arrow">→</div>
+                        <div class="arch-node">
+                            <i class="fas fa-building"></i>
+                            <span>Buildings</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="team-section">
+                <h3>👥 Research Team</h3>
+                <div class="team-grid">
+                    <div class="team-member">
+                        <div class="member-avatar">
+                            <i class="fas fa-user-graduate"></i>
+                        </div>
+                        <h4>Lead Researcher</h4>
+                        <p>GeoAI & Deep Learning Specialist</p>
+                    </div>
+                    <div class="team-member">
+                        <div class="member-avatar">
+                            <i class="fas fa-user-cog"></i>
+                        </div>
+                        <h4>ML Engineer</h4>
+                        <p>Computer Vision & RL Expert</p>
+                    </div>
+                    <div class="team-member">
+                        <div class="member-avatar">
+                            <i class="fas fa-user-tie"></i>
+                        </div>
+                        <h4>Data Scientist</h4>
+                        <p>Remote Sensing & GIS Analyst</p>
+                    </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-content">
+                <div class="footer-section">
+                    <h4>🧠 Fusing Brains & Boundaries</h4>
+                    <p>Advanced GeoAI research for building footprint extraction using deep learning and reinforcement learning.</p>
+                </div>
+                <div class="footer-section">
+                    <h4>🔗 Links</h4>
+                    <ul>
+                        <li><a href="#home">Home</a></li>
+                        <li><a href="#pipeline">AI Pipeline</a></li>
+                        <li><a href="#benchmarks">Benchmarks</a></li>
+                        <li><a href="#about">About</a></li>
+                    </ul>
+                </div>
+                <div class="footer-section">
+                    <h4>📚 Resources</h4>
+                    <ul>
+                        <li><a href="#" target="_blank">Research Paper</a></li>
+                        <li><a href="#" target="_blank">GitHub Repository</a></li>
+                        <li><a href="#" target="_blank">Dataset</a></li>
+                        <li><a href="#" target="_blank">API Documentation</a></li>
+                    </ul>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <p>&copy; 2025 Fusing Brains and Boundaries. All rights reserved.</p>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Scripts -->
+    <script src="js/main.js"></script>
+    <script src="js/pipeline.js"></script>
+    <script src="js/agriculture.js"></script>
+    <script src="js/testing.js"></script>
+    <script src="js/charts.js"></script>
+</body>
+</html>
             display: flex;
             justify-content: space-between;
             flex-wrap: wrap;

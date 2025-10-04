@@ -1,6 +1,0 @@
-# Additional requirements for the GeoAI system
-
-# Detectron2 install command - to be executed separately
-# pip install 'git+https://github.com/facebookresearch/detectron2.git'
-
-# Custom packages that need special installation

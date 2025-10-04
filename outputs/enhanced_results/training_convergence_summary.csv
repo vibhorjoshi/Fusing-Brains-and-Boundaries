@@ -1,3 +1,0 @@
-Model,Final IoU (mean last 5),Stability (std last 5),Convergence Epoch (95%)
-Baseline,81.444,0.916,14
-Enhanced,86.517,0.448,18
