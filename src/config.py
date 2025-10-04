@@ -6,10 +6,10 @@ class Config:
 	"""Project configuration with minimal defaults to run Steps 5–7."""
 
 	# Output directories
-	OUTPUT_DIR: Path = Path("./outputs")
-	FIGURES_DIR: Path = OUTPUT_DIR / "figures"
-	MODELS_DIR: Path = OUTPUT_DIR / "models"
-	LOGS_DIR: Path = OUTPUT_DIR / "logs"
+	OUTPUT_DIR = "./outputs"  # String path for compatibility
+	FIGURES_DIR = "./outputs/figures"
+	MODELS_DIR = "./outputs/models"
+	LOGS_DIR = "./outputs/logs"
 
 	# Data
 	DATA_DIR: Path = Path("./building_footprint_results/data")

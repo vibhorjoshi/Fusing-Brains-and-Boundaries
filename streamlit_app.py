@@ -1,4 +1,10 @@
-﻿import streamlit as st
+﻿# Fix matplotlib and fontconfig permissions for containerized environments
+import os
+os.environ['MPLCONFIGDIR'] = '/tmp/matplotlib'
+os.environ['FONTCONFIG_PATH'] = '/tmp/fontconfig'
+os.environ['FONTCONFIG_FILE'] = '/tmp/fontconfig/fonts.conf'
+
+import streamlit as st
 import pandas as pd
 import numpy as np
 import plotly.express as px

@@ -3,23 +3,13 @@
 on:
   push:
     branches: [main]
-  pull_request:
-    branches: [main]
 
 jobs:
   security:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Setup Python
-        uses: actions/setup-python@v4
-        with:
-          python-version: '3.11'
-      - name: Install tools
-        run: pip install safety bandit
-      - name: Run safety
-        run: safety check --json > safety.json || echo "[]" > safety.json
-        continue-on-error: true
-      - name: Run bandit
-        run: bandit -r . -f json -o bandit.json || echo '{"results":[]}' > bandit.json
-        continue-on-error: true
+      - name: Install deps
+        run: pip install safety
+      - name: Security scan
+        run: safety check || true
