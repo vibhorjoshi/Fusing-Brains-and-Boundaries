@@ -356,15 +356,23 @@ async def batch_process_buildings(
         sys.path.append('app')
         
         from pathlib import Path
+        import os
         
         # Limit processing to prevent overload
-        states_to_process = state_list[:max_states]
         results = {}
-        
+        data_root = Path("../building_footprint_results/data").resolve()
+        states_to_process = state_list[:max_states]
         for state in states_to_process:
             try:
-                # Check if state data exists
-                data_path = Path(f"../building_footprint_results/data/{state}")
+                # Construct and normalize state data path
+                data_path = (data_root / state).resolve()
+                # Validate path containment within the root directory
+                if not str(data_path).startswith(str(data_root)):
+                    results[state] = {
+                        "status": "error",
+                        "message": "Invalid state name or path traversal attempt detected"
+                    }
+                    continue
                 
                 if data_path.exists():
                     # Get available files
