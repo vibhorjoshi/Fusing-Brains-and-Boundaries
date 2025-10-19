@@ -43,7 +43,7 @@ pytest-asyncio==0.21.1
 httpx==0.25.0
 
 # Production
-gunicorn==21.2.0
+gunicorn==22.0.0
 supervisor==4.2.5
 
 # Geographic & Mapping
