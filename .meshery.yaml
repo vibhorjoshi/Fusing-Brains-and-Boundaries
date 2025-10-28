@@ -1,0 +1,43 @@
+apiVersion: meshery.layer5.io/v1alpha1
+kind: Design
+metadata:
+  name: Fusing-Brains-and-Boundaries
+  version: 0.1.0
+  description: >
+    AI-driven hybrid GeoAI system integrating deep reinforcement learning and building morphology priors 
+    for boundary regularization and feature fusion. Imported from GitHub repo vibhorjoshi/Fusing-Brains-and-Boundaries.
+  authors:
+    - Vibhor Joshi
+spec:
+  components:
+    - name: geoai-core
+      type: service
+      model: generic
+      namespace: fusing-brains
+      settings:
+        language: python
+        framework: pytorch
+        purpose: Building footprint extraction and regularization
+        repository: https://github.com/vibhorjoshi/Fusing-Brains-and-Boundaries
+    - name: dqn-adaptive-fusion
+      type: module
+      model: generic
+      settings:
+        role: Deep Q-Network-based adaptive fusion module
+        trained: true
+        dependencies:
+          - geoai-core
+    - name: mask-rcnn-backbone
+      type: model
+      model: resnet50
+      framework: pytorch
+      settings:
+        purpose: Instance segmentation base network
+  metadata:
+    tags:
+      - geoai
+      - deep-learning
+      - segmentation
+      - dqn
+      - research
+    visibility: public
