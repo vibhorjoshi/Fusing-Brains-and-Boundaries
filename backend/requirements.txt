@@ -118,7 +118,7 @@ kombu==5.3.4
 rabbitmq==0.2.0
 
 # Web server (production)
-gunicorn==21.2.0
+gunicorn==22.0.0
 
 # Environment and deployment
 docker-compose==1.29.2
