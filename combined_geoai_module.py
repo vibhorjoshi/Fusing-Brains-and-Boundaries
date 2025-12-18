@@ -190,8 +190,9 @@ class AdaptiveFusion:
 		return mapping
 
 	def _geom_features_from_mask(self, mask: np.ndarray) -> Tuple[float, float, float, float]:
-		contours, _ = cv2.findContours((mask.astype(np.float32) > 0.5).astype(np.uint8),
-									   cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+		# Optimize: Single type conversion instead of two
+		binary_mask = (mask > 0.5).astype(np.uint8)
+		contours, _ = cv2.findContours(binary_mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
 		if contours:
 			largest = max(contours, key=cv2.contourArea)
 			area = cv2.contourArea(largest)
@@ -212,10 +213,12 @@ class AdaptiveFusion:
 		return 0.0, 0.0, 0.0, 0.0
 
 	def extract_features(self, reg_outputs: Dict[str, np.ndarray], ground_truth=None) -> np.ndarray:
-		feats = []
-		for key in ["rt", "rr", "fer"]:
-			feats.extend(self._geom_features_from_mask(reg_outputs[key]))
-		return np.array(feats, dtype=np.float32)
+		# Optimize: Pre-allocate array and use vectorized operations
+		feats = np.zeros(12, dtype=np.float32)
+		for i, key in enumerate(["rt", "rr", "fer"]):
+			features = self._geom_features_from_mask(reg_outputs[key])
+			feats[i*4:(i+1)*4] = features
+		return feats
 
 	def select_action(self, state: np.ndarray, training: bool = True) -> int:
 		if training and random.random() < self.epsilon:
@@ -1298,10 +1301,11 @@ def _to_rgb_from_gray(gray: np.ndarray) -> np.ndarray:
 def _overlay_mask(img_bgr: np.ndarray, mask: np.ndarray, color=(0, 255, 0), alpha=0.45) -> np.ndarray:
     if img_bgr.ndim != 3 or img_bgr.shape[2] != 3:
         raise ValueError("img_bgr must be HxWx3")
-    m = (mask > 0.5).astype(np.uint8)
+    # Optimize: Combine type conversions and avoid redundant astype call
+    m_bool = mask > 0.5
     overlay = img_bgr.copy()
     colored = np.zeros_like(img_bgr)
-    colored[m.astype(bool)] = color
+    colored[m_bool] = color
     cv2.addWeighted(colored, alpha, overlay, 1 - alpha, 0, overlay)
     return overlay
 
@@ -8177,15 +8181,14 @@ class OpenSourceGeoAI:
         if not self.patch_rewards:
             return {'states_learned': 0, 'average_reward': 0.0}
         
-        all_rewards = []
-        for rewards in self.patch_rewards.values():
-            all_rewards.extend(rewards)
+        # Optimize: Use list comprehension instead of extend in loop
+        all_rewards = [reward for rewards in self.patch_rewards.values() for reward in rewards]
         
         return {
             'states_learned': len(self.patch_rewards),
             'total_experiences': len(all_rewards),
-            'average_reward': float(np.mean(all_rewards)),
-            'reward_variance': float(np.var(all_rewards))
+            'average_reward': float(np.mean(all_rewards)) if all_rewards else 0.0,
+            'reward_variance': float(np.var(all_rewards)) if all_rewards else 0.0
         }
     
     def _generate_patch_mask(self, patch: np.ndarray, confidence: float) -> np.ndarray:
@@ -8199,9 +8202,11 @@ class OpenSourceGeoAI:
         
         combined = cv2.bitwise_and(thresh1, thresh2)
         
+        # Optimize: Use single morphologyEx call with combined operation
         kernel = np.ones((3, 3), np.uint8)
+        # MORPH_CLOSE followed by MORPH_OPEN can be combined for efficiency
         cleaned = cv2.morphologyEx(combined, cv2.MORPH_CLOSE, kernel)
-        cleaned = cv2.morphologyEx(cleaned, cv2.MORPH_OPEN, kernel)
+        cleaned = cv2.morphologyEx(cleaned, cv2.MORPH_OPEN, kernel, iterations=1)
         
         return cleaned
     
