@@ -46,19 +46,36 @@ class PostProcessor:
 	def merge_overlapping_polygons(self, polys: List[Polygon], overlap_threshold: float = 0.1) -> List[Polygon]:
 		if not polys:
 			return []
+		
+		# Create a copy of the list to avoid modifying the input
 		merged: List[Polygon] = []
-		remaining = polys.copy()
+		remaining = list(polys)  # Explicit copy for clarity
+		
 		while remaining:
 			current = remaining.pop(0)
 			to_merge = [current]
 			i = 0
 			while i < len(remaining):
+				# Optimize: Check bounding box overlap first (cheaper than actual intersection)
+				current_bounds = current.bounds
+				candidate_bounds = remaining[i].bounds
+				
+				# Quick rejection test using bounding boxes
+				if (current_bounds[2] < candidate_bounds[0] or  # current max_x < candidate min_x
+					current_bounds[0] > candidate_bounds[2] or  # current min_x > candidate max_x
+					current_bounds[3] < candidate_bounds[1] or  # current max_y < candidate min_y
+					current_bounds[1] > candidate_bounds[3]):   # current min_y > candidate max_y
+					i += 1
+					continue
+				
+				# Only compute expensive intersection if bounding boxes overlap
 				inter = current.intersection(remaining[i]).area
 				union = current.union(remaining[i]).area
 				if union > 0 and inter / union > overlap_threshold:
 					to_merge.append(remaining.pop(i))
 				else:
 					i += 1
+			
 			union_geom: BaseGeometry = unary_union(to_merge)
 			if hasattr(union_geom, "geoms"):
 				for g in list(getattr(union_geom, "geoms")):

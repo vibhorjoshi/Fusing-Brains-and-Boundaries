@@ -55,16 +55,22 @@ class Evaluator:
 
 	@staticmethod
 	def directed_hausdorff(points1: np.ndarray, points2: np.ndarray) -> float:
-		max_min = 0.0
-		for p1 in points1:
-			min_d = float("inf")
-			for p2 in points2:
-				d = float(np.linalg.norm(p1 - p2))
-				if d < min_d:
-					min_d = d
-			if min_d > max_min:
-				max_min = min_d
-		return float(max_min)
+		"""Optimized directed Hausdorff distance using vectorized operations."""
+		if len(points1) == 0 or len(points2) == 0:
+			return float("inf")
+		
+		# Optimize: Use broadcasting for vectorized distance computation
+		# points1: (N, 2), points2: (M, 2)
+		# Compute all pairwise distances at once
+		# distances[i, j] = ||points1[i] - points2[j]||
+		diff = points1[:, np.newaxis, :] - points2[np.newaxis, :, :]  # (N, M, 2)
+		distances = np.sqrt(np.sum(diff ** 2, axis=2))  # (N, M)
+		
+		# For each point in points1, find minimum distance to any point in points2
+		min_distances = np.min(distances, axis=1)  # (N,)
+		
+		# Return the maximum of these minimum distances
+		return float(np.max(min_distances))
 
 	def compute_boundary_iou(self, pred_mask: np.ndarray, gt_mask: np.ndarray) -> float:
 		pred_b = cv2.Canny((pred_mask * 255).astype(np.uint8), 50, 150)

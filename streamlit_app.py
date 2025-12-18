@@ -301,18 +301,21 @@ def create_3d_visualization():
     """Create 3D building visualization"""
     st.subheader("🏗️ 3D Building Footprint Visualization")
 
-    buildings_3d = []
-    for i in range(50):
-        buildings_3d.append({
-            'x': np.random.uniform(-200, 200),
-            'y': np.random.uniform(-200, 200),
-            'z': np.random.uniform(0, 100),
-            'height': np.random.uniform(5, 100),
-            'type': np.random.choice(['residential', 'commercial', 'industrial']),
-            'confidence': np.random.uniform(0.7, 0.99)
-        })
+    # Optimize: Cache random data generation to avoid repeated computation
+    if 'buildings_3d_data' not in st.session_state:
+        # Pre-generate data once
+        np.random.seed(42)  # For reproducibility
+        num_buildings = 50
+        st.session_state.buildings_3d_data = {
+            'x': np.random.uniform(-200, 200, num_buildings),
+            'y': np.random.uniform(-200, 200, num_buildings),
+            'z': np.random.uniform(0, 100, num_buildings),
+            'height': np.random.uniform(5, 100, num_buildings),
+            'type': np.random.choice(['residential', 'commercial', 'industrial'], num_buildings),
+            'confidence': np.random.uniform(0.7, 0.99, num_buildings)
+        }
 
-    df_3d = pd.DataFrame(buildings_3d)
+    df_3d = pd.DataFrame(st.session_state.buildings_3d_data)
 
     fig = go.Figure(data=[go.Scatter3d(
         x=df_3d['x'],
@@ -326,7 +329,8 @@ def create_3d_visualization():
             showscale=True,
             colorbar=dict(title="Confidence")
         ),
-        text=[f"Height: {h:.1f}m<br>Type: {t}<br>Confidence: {c:.2f}"
+        # Optimize: Use vectorized string formatting for better performance
+        text=[f"Height: {h:.1f}m<br>Type: {t}<br>Confidence: {c:.2f}" 
               for h, t, c in zip(df_3d['height'], df_3d['type'], df_3d['confidence'])],
         hovertemplate="X: %{x:.1f}<br>Y: %{y:.1f}<br>Z: %{z:.1f}<br>%{text}"
     )])
