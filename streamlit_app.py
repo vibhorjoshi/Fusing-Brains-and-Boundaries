@@ -329,8 +329,9 @@ def create_3d_visualization():
             showscale=True,
             colorbar=dict(title="Confidence")
         ),
-        # Optimize: Pre-format text once using vectorized operations
-        text=df_3d.apply(lambda row: f"Height: {row['height']:.1f}m<br>Type: {row['type']}<br>Confidence: {row['confidence']:.2f}", axis=1),
+        # Optimize: Use vectorized string formatting for better performance
+        text=[f"Height: {h:.1f}m<br>Type: {t}<br>Confidence: {c:.2f}" 
+              for h, t, c in zip(df_3d['height'], df_3d['type'], df_3d['confidence'])],
         hovertemplate="X: %{x:.1f}<br>Y: %{y:.1f}<br>Z: %{z:.1f}<br>%{text}"
     )])
 

@@ -47,9 +47,9 @@ class PostProcessor:
 		if not polys:
 			return []
 		
-		# Optimize: Avoid unnecessary copy, use list directly
+		# Create a copy of the list to avoid modifying the input
 		merged: List[Polygon] = []
-		remaining = polys[:]  # Shallow copy is sufficient
+		remaining = list(polys)  # Explicit copy for clarity
 		
 		while remaining:
 			current = remaining.pop(0)

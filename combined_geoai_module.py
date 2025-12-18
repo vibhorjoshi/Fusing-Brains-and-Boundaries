@@ -8184,11 +8184,23 @@ class OpenSourceGeoAI:
         # Optimize: Use list comprehension instead of extend in loop
         all_rewards = [reward for rewards in self.patch_rewards.values() for reward in rewards]
         
+        # Optimize: Compute mean once and reuse for variance calculation
+        if not all_rewards:
+            return {
+                'states_learned': len(self.patch_rewards),
+                'total_experiences': 0,
+                'average_reward': 0.0,
+                'reward_variance': 0.0
+            }
+        
+        mean_reward = float(np.mean(all_rewards))
+        variance = float(np.mean((np.array(all_rewards) - mean_reward) ** 2))
+        
         return {
             'states_learned': len(self.patch_rewards),
             'total_experiences': len(all_rewards),
-            'average_reward': float(np.mean(all_rewards)) if all_rewards else 0.0,
-            'reward_variance': float(np.var(all_rewards)) if all_rewards else 0.0
+            'average_reward': mean_reward,
+            'reward_variance': variance
         }
     
     def _generate_patch_mask(self, patch: np.ndarray, confidence: float) -> np.ndarray:
@@ -8202,10 +8214,9 @@ class OpenSourceGeoAI:
         
         combined = cv2.bitwise_and(thresh1, thresh2)
         
-        # Optimize: Use single morphologyEx call with combined operation
+        # Apply morphological operations to clean up the mask
         kernel = np.ones((3, 3), np.uint8)
-        # MORPH_CLOSE followed by MORPH_OPEN can be combined for efficiency
-        cleaned = cv2.morphologyEx(combined, cv2.MORPH_CLOSE, kernel)
+        cleaned = cv2.morphologyEx(combined, cv2.MORPH_CLOSE, kernel, iterations=1)
         cleaned = cv2.morphologyEx(cleaned, cv2.MORPH_OPEN, kernel, iterations=1)
         
         return cleaned
