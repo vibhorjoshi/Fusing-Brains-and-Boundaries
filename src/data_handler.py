@@ -50,23 +50,38 @@ class RasterDataLoader:
 		"""Return normalized 3-channel patches, masks, and raw single-band patches."""
 		H, W = img.shape
 		ps = self.config.PATCH_SIZE
+		stride = ps
+		
+		# Optimize: Calculate number of patches upfront for pre-allocation
+		num_patches_y = (H - ps) // stride + 1
+		num_patches_x = (W - ps) // stride + 1
+		max_patches = min(num_patches_y * num_patches_x, self.config.MAX_PATCHES_PER_STATE)
+		
 		patches: List[np.ndarray] = []
 		masks: List[np.ndarray] = []
 		raw_patches: List[np.ndarray] = []
-		stride = ps
+		
+		# Pre-create 3-channel version once
 		img3 = np.stack([img, img, img], axis=0)
+		
 		count = 0
 		for y in range(0, H - ps + 1, stride):
 			for x in range(0, W - ps + 1, stride):
+				if count >= max_patches:
+					return patches, masks, raw_patches
+					
 				raw = img[y:y+ps, x:x+ps].astype(np.float32)
 				p = img3[:, y:y+ps, x:x+ps]
 				m = mask[y:y+ps, x:x+ps]
-				patches.append((p - p.mean()) / (p.std() + 1e-6))
+				
+				# Optimize: Compute mean and std once per patch
+				p_mean = p.mean()
+				p_std = p.std()
+				patches.append((p - p_mean) / (p_std + 1e-6))
 				masks.append(m.astype(np.uint8))
 				raw_patches.append(raw)
 				count += 1
-				if count >= self.config.MAX_PATCHES_PER_STATE:
-					return patches, masks, raw_patches
+				
 		return patches, masks, raw_patches
 
 	def load_multiple_states(self, limit: int = 10) -> Dict[str, Tuple[List[np.ndarray], List[np.ndarray], Optional[dict]]]:
