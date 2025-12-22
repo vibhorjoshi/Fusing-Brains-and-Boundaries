@@ -84,7 +84,7 @@ asyncio-mqtt==0.16.1
 orjson==3.9.10
 
 # Validation and serialization
-marshmallow==3.20.1
+marshmallow==3.26.2
 
 # HTTP and networking
 requests==2.31.0
