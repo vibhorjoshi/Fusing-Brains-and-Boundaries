@@ -19,7 +19,7 @@ pillow==10.0.1
 # Geo libraries
 folium==0.14.0
 branca==0.6.0
-geopandas==0.13.2
+geopandas==1.1.2
 shapely==2.0.1
 
 # Utils
