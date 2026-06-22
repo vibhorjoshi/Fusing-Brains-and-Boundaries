@@ -104,7 +104,7 @@ supervisor==4.2.5
 prometheus-client==0.19.0
 
 # Encryption and hashing
-cryptography==41.0.8
+cryptography==48.0.1
 bcrypt==4.1.2
 
 # File upload handling
