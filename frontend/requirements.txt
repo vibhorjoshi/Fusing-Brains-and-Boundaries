@@ -1,7 +1,7 @@
 # GeoAI Research Frontend Dependencies
 
 # Streamlit and interactive UI
-streamlit==1.28.2
+streamlit==1.54.0
 streamlit-folium==0.15.0
 
 # Data visualization
