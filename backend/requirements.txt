@@ -17,7 +17,7 @@ detectron2==0.6
 
 # Computer Vision
 opencv-python==4.8.1.78
-Pillow==10.1.0
+Pillow==12.3.0
 scikit-image==0.22.0
 
 # Geospatial
