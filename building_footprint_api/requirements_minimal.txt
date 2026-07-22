@@ -17,7 +17,7 @@ opencv-python>=4.7.0
 scikit-learn>=1.2.2
 numpy>=1.24.3
 scipy>=1.10.1
-pillow>=9.5.0
+pillow>=12.3.0
 matplotlib>=3.7.1
 
 # Geospatial (without GDAL)
